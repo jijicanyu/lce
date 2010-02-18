@@ -96,9 +96,15 @@ int CNetWorkerMgr<T>::init(uint32_t dwThreadNum,uint32_t dwMaxClient)
 	{
 		CNetWorker * poWorker = new T;
 		m_vecWorkers.push_back(poWorker);
-		poWorker->init(dwMaxClient * FD_TIMES);
-	}
 
+		if(poWorker->init(dwMaxClient * FD_TIMES) != 0)
+		{
+			snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,error:%s",__FILE__,__LINE__,poWorker->getErrMsg());
+			return -1;
+		}
+
+	}
+	return 0;
 }
 
 template<class T>
@@ -274,9 +280,8 @@ void CNetWorkerMgr<T>::onAccept(int iFd,void *pData)
 		pstClientInfo->pstServerInfo = pstServerInfo;
 
 		int iIndex = poNetWorkerMgr->m_dwClientNum % poNetWorkerMgr->m_vecWorkers.size();
-		pstClientInfo->poWorker = poNetWorkerMgr->m_vecWorkers[iIndex];
-		
-		pstClientInfo->poWorker->watch(iClientSock,pstClientInfo);
+		pstClientInfo->pData = poNetWorkerMgr->m_vecWorkers[iIndex];
+		poNetWorkerMgr->m_vecWorkers[iIndex]->watch(iClientSock,pstClientInfo);
 	}
 }
 

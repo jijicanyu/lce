@@ -156,7 +156,7 @@ public:
 
     int writeTo(const int iSrvId, const string& sIp, const uint16_t wPort, const char* pszData, const int iSize);
 
-    int connect(int iSrvId,const string &sIp,uint16_t wPort);
+    int connect(int iSrvId,const string &sIp,uint16_t wPort,void *pData = NULL);
 
 
     int addTimer(int iTimerId,uint32_t dwExpire,CProcessor * pProcessor,void *pData = NULL);
@@ -189,7 +189,6 @@ public:
 
     static CCommMgr & getInstance()
     {
-
         if (NULL == m_pInstance)
         {
 			m_pInstance = new CCommMgr;
@@ -200,7 +199,11 @@ private:
     int close(int iFd);
     int write(int iFd);
     inline bool isClose(int iFd);
-    CCommMgr(){ }
+
+    CCommMgr(){}
+	CCommMgr& operator=(const CCommMgr&);
+	CCommMgr(const CCommMgr&);
+
 private:
     vector <SServerInfo *> m_vecServers;
     vector <SClientInfo *> m_vecClients;

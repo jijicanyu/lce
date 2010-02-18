@@ -13,6 +13,12 @@ int CNetWorker::init(uint32_t dwMaxClient /* = 10000 */)
 		return -1;
 	}
 
+	if( init() < 0)
+	{
+		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,init worker error",__FILE__,__LINE__);
+		return -1;
+	}
+	
 	return 0;
 }
 
@@ -90,7 +96,7 @@ int CNetWorker::setPkgFilter(int iSrvId,CPackageFilter *pPkgFilter)
 }
 
 
-int CNetWorker::connect(int iSrvId,const string &sIp,uint16_t wPort)
+int CNetWorker::connect(int iSrvId,const string &sIp,uint16_t wPort,void *pData)
 {
 
 	map<uint32_t,SServerInfo *>::iterator it = m_mapServers.find(iSrvId);
@@ -109,7 +115,7 @@ int CNetWorker::connect(int iSrvId,const string &sIp,uint16_t wPort)
 		SClientInfo * pstClientInfo = new SClientInfo;
 		pstClientInfo->iFd=lce::createTcpSock();
 		pstClientInfo->pstServerInfo = pstServerInfo;
-		pstClientInfo->poWorker = this;
+		pstClientInfo->pData = pData;
 
 		if (pstClientInfo->iFd < 0)
 		{
@@ -138,7 +144,7 @@ int CNetWorker::connect(int iSrvId,const string &sIp,uint16_t wPort)
 			stSession.iSvrId=pstServerInfo->iSrvId;
 			stSession.stClientAddr=pstClientInfo->stClientAddr;
 			m_vecClients[pstClientInfo->iFd] = pstClientInfo;
-			onConnect(stSession,true);
+			onConnect(stSession,true,pData);
 
 			if(isClose(pstClientInfo->iFd))
 			{
@@ -152,7 +158,7 @@ int CNetWorker::connect(int iSrvId,const string &sIp,uint16_t wPort)
 
 			if (errno == EINPROGRESS)
 			{
-				m_oEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_WRITE,CNetWorker::onConnect,pstClientInfo);
+				m_oEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_WRITE,CNetWorker::onConnect,this);
 				m_vecClients[pstClientInfo->iFd]=pstClientInfo;
 				return pstClientInfo->iFd;
 			}
@@ -177,8 +183,14 @@ int CNetWorker::connect(int iSrvId,const string &sIp,uint16_t wPort)
 void CNetWorker::onConnect(int iFd,void *pData)
 {
 
-	SClientInfo *pstClientInfo = (SClientInfo*)pData;
-	CNetWorker *poWorker = pstClientInfo->poWorker;
+	CNetWorker *poWorker = (CNetWorker*)pData;
+
+	if(poWorker->isClose(iFd))
+	{
+		return;
+	}
+
+	SClientInfo *pstClientInfo = poWorker->m_vecClients[iFd];
 
 	poWorker->m_oEvent.delFdEvent(iFd,CEvent::EV_WRITE);
 
@@ -190,19 +202,24 @@ void CNetWorker::onConnect(int iFd,void *pData)
 
 
 	SSession stSession;
-	stSession.ddwBeginTime=lce::getTickCount();
-	stSession.iFd=iFd;
-	stSession.iSvrId=pstServerInfo->iSrvId;
-	stSession.stClientAddr=pstClientInfo->stClientAddr;
+	stSession.ddwBeginTime = lce::getTickCount();
+	stSession.iFd = iFd;
+	stSession.iSvrId = pstServerInfo->iSrvId;
+	stSession.stClientAddr = pstClientInfo->stClientAddr;
 
 	if(error == 0)
 	{
-		poWorker->onConnect(stSession,true);
-		poWorker->m_oEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_READ,CNetWorker::onTcpRead,pstClientInfo);
+		poWorker->onConnect(stSession,true,pstClientInfo->pData);
+		
+		if(!poWorker->isClose(iFd))
+		{
+			pstClientInfo->pData = poWorker;
+			poWorker->m_oEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_READ,CNetWorker::onTcpRead,pstClientInfo);
+		}
 	}
 	else
 	{
-		poWorker->onConnect(stSession,false);
+		poWorker->onConnect(stSession,false,pstClientInfo->pData);
 		poWorker->close(iFd);
 	}
 }
@@ -222,7 +239,7 @@ void CNetWorker::onTcpRead(int iFd,void *pData)
 {
 
 	SClientInfo *pstClientInfo = (SClientInfo*)pData;
-	CNetWorker *poWorker = pstClientInfo->poWorker;
+	CNetWorker *poWorker = (CNetWorker*)pstClientInfo->pData;
 
 	poWorker->m_vecClients[iFd] = pstClientInfo;
 

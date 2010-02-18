@@ -95,14 +95,12 @@ namespace lce
 		}
 	};
 
-	class CNetWorker;
-
 	struct SClientInfo
 	{
 		SClientInfo(){ memset(this,0,sizeof(SClientInfo));}
 		int iFd;
 		bool bNeedClose;
-		CNetWorker *poWorker;
+		void *pData;
 		SServerInfo *pstServerInfo;
  		CSocketBuf *pSocketRecvBuf;
 		CSocketBuf *pSocketSendBuf;
@@ -128,7 +126,9 @@ namespace lce
 
 	public:
 
-		int init(uint32_t dwMaxClient = 10000);
+		int init(uint32_t dwMaxClient);
+
+		virtual int init(){ return 0;};
 
 		virtual void onRead(SSession &stSession,const char * pszData, const int iSize){
 			throw std::runtime_error("not implement onRead");
@@ -136,7 +136,7 @@ namespace lce
 		virtual void onClose(SSession &stSession){
 			throw std::runtime_error("not implement onColse");
 		}
-		virtual void onConnect(SSession &stSession,bool bOk){
+		virtual void onConnect(SSession &stSession,bool bOk,void *pData){
 			throw std::runtime_error("not implement onConnect");
 		}
 		virtual void onError(SSession &stSession,const char * szErrMsg,int iError){
@@ -144,7 +144,7 @@ namespace lce
 		}
 
 		virtual void onTimer(int iTimeId,void *pData){ 
-			throw std::runtime_error("not implement CProcessor onTimer");
+			throw std::runtime_error("not implement onTimer");
 		}
 
 		int watch(int iFd,void *pData);
@@ -153,10 +153,12 @@ namespace lce
 
 		int createAsyncConn(int iPkgType = PKG_RAW,uint32_t dwInitRecvBufLen =10240,uint32_t dwMaxRecvBufLen=102400,uint32_t dwInitSendBufLen=102400,uint32_t dwMaxSendBufLen=1024000);
 		int setPkgFilter(int iSrvId,CPackageFilter *pPkgFilter);
-		int connect(int iSrvId,const string &sIp,uint16_t wPort);
+		int connect(int iSrvId,const string &sIp,uint16_t wPort,void *pData = NULL);
 
 		int addTimer(int iTimerId,uint32_t dwExpire,void *pData = NULL);
 		int delTimer(int iTimerId);
+
+		const char * getErrMsg(){ return m_szErrMsg;}
 
 	private:
 		int run();
@@ -173,12 +175,13 @@ namespace lce
 		static void onConnect(int iFd,void *pData);
 		static void onTimerProc(int iTimerId,void *pData);
 
+	protected:
+		char m_szErrMsg[1024];
 	private:
 		CEvent m_oEvent;
 		vector <SClientInfo *> m_vecClients;
 		map <uint32_t,SServerInfo *> m_mapServers;
 		MAP_TIMER_PROC m_mapTimeProcs;
-		char m_szErrMsg[1024];
 		
 
 	};

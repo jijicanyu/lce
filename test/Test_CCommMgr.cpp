@@ -126,7 +126,7 @@ public:
 		dwOutCount++;
 	}
 
-	void onConnect(SSession &stSession,bool bOk)
+	void onConnect(SSession &stSession,bool bOk,void *pData)
 	{
 		dwCount++;
 		//printf("onconnect id=%d\n",stSession.iFd);

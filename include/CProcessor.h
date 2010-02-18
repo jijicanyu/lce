@@ -17,7 +17,7 @@ public:
 	virtual void onClose(SSession &stSession){
 		throw std::runtime_error("not implement CProcessor onColse");
 	}
-	virtual void onConnect(SSession &stSession,bool bOk){
+	virtual void onConnect(SSession &stSession,bool bOk,void *pData){
 		throw std::runtime_error("not implement CProcessor onConnect");
 	}
 	virtual void onError(SSession &stSession,const char * szErrMsg,int iError){

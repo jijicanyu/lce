@@ -225,6 +225,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\CLruCache.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\CNetWorker.h"
 				>
 			</File>
@@ -258,6 +262,10 @@
 			</File>
 			<File
 				RelativePath=".\include\CShmArray.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\CSingleton.h"
 				>
 			</File>
 			<File

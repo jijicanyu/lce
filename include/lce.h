@@ -3,7 +3,6 @@
 #include "Utils.h"
 #include "StringHelper.h"
 #include "CConfig.h"
-#include "CFileLog.h"
 #include "CCommMgr.h"
 #include "CHttpPackageFilter.h"
 #include "CH2ShortT3PackageFilter.h"
@@ -15,9 +14,11 @@
 #include "CPackage.h"
 #include "CShm.h"
 #include "CShmArray.h"
-s#include "CTask.h"
+#include "CTask.h"
 #include "CThread.h"
 #include "CLog.h"
 #include "CAnyValue.h"
-
+#include "CNetWorkerMgr.h"
+#include "CSingleton.h"
+#include "CLruCache.h"
 #endif

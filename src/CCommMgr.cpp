@@ -507,7 +507,7 @@ void CCommMgr::onAccept(int iFd,void *pData)
 		stSession.iFd = iClientSock;
 		stSession.stClientAddr=pstClientInfo->stClientAddr;
 
-		if (pstServerInfo->pProcessor)   pstServerInfo->pProcessor->onConnect(stSession,true);
+		if (pstServerInfo->pProcessor)   pstServerInfo->pProcessor->onConnect(stSession,true,NULL);
 
 		CCommMgr::getInstance().m_oCEvent.addFdEvent(iClientSock,CEvent::EV_READ,CCommMgr::onTcpRead,pstClientInfo);
 	}
@@ -541,14 +541,14 @@ void CCommMgr::onConnect(int iFd,void *pData)
 	if(error == 0)
 	{
 		if (pstServerInfo->pProcessor != NULL)
-			pstServerInfo->pProcessor->onConnect(stSession,true);
-
-		CCommMgr::getInstance().m_oCEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_READ,CCommMgr::onTcpRead,pstClientInfo);
+			pstServerInfo->pProcessor->onConnect(stSession,true,pData);
+		if(!CCommMgr::getInstance().isClose(iFd))
+			CCommMgr::getInstance().m_oCEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_READ,CCommMgr::onTcpRead,pstClientInfo);
 	}
 	else
 	{
 		if (pstServerInfo->pProcessor != NULL)
-			pstServerInfo->pProcessor->onConnect(stSession,false);
+			pstServerInfo->pProcessor->onConnect(stSession,false,pData);
 		CCommMgr::getInstance().close(iFd);
 	}
 
@@ -820,7 +820,7 @@ inline bool CCommMgr::isClose(int iFd)
 
 
 
-int CCommMgr::connect(int iSrvId,const string &sIp,uint16_t wPort)
+int CCommMgr::connect(int iSrvId,const string &sIp,uint16_t wPort,void *pData)
 {
     if( iSrvId <0 || iSrvId >(int) m_vecServers.size()-1)
     {
@@ -872,7 +872,7 @@ int CCommMgr::connect(int iSrvId,const string &sIp,uint16_t wPort)
             stSession.stClientAddr=pstClientInfo->stClientAddr;
             m_vecClients[pstClientInfo->iFd]=pstClientInfo;
             if (pstServerInfo->pProcessor != NULL)
-                pstServerInfo->pProcessor->onConnect(stSession,true);
+                pstServerInfo->pProcessor->onConnect(stSession,true,pData);
 
             if(CCommMgr::getInstance().isClose(pstClientInfo->iFd))
             {
@@ -889,7 +889,7 @@ int CCommMgr::connect(int iSrvId,const string &sIp,uint16_t wPort)
 			if (errno == EINPROGRESS)
             {
 
-                m_oCEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_WRITE,CCommMgr::onConnect,pstClientInfo);
+                m_oCEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_WRITE,CCommMgr::onConnect,pData);
                 m_vecClients[pstClientInfo->iFd]=pstClientInfo;
                 return pstClientInfo->iFd;
             }
