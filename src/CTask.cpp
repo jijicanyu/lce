@@ -33,7 +33,6 @@ namespace lce
         for(int i=0;i<m_iThreadNum;i++)
         {
             m_vecTaskThreads[i]->stop();
-			pthread_cancel(m_vecTaskThreads[i]->getId());
         }
         return 0;
     }

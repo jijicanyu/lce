@@ -28,9 +28,8 @@ int CThread::start()
 
 int CThread::stop()
 {
-    pthread_cancel(m_iId);
-    m_iStop = 1;
-    return 0;
+	m_iStop = 1;
+	return pthread_cancel(m_iId);
 }
 
 };

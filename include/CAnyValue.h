@@ -39,10 +39,10 @@ struct DType
 {
     enum ValueType	//realtype
     {
-        Integer1	= 0,		///< tiny int value (1字节)
-        Integer2	= 1,		///< small int value (2字节)
-        Integer4	= 2,		///< signed integer value(int32)(4字节)
-        Integer8	= 3,		///< big signed interger value(int64)(8字节)
+        Integer1	= 0,		///< tiny unint value (1字节)
+        Integer2	= 1,		///< small unint value (2字节)
+        Integer4	= 2,		///< unsigned integer value(int32)(4字节)
+        Integer8	= 3,		///< big unsigned interger value(int64)(8字节)
         Integer		= Integer8,
         String1		= 4,		///< string value	//1个字节表示长度
         String2		= 5,		///< string value	//2个字节表示长度
@@ -50,10 +50,10 @@ struct DType
         String		= String4,
         Vector		= 7,		///< array value (double list)
         Map			= 8,		///< object value (collection of name/value pairs).
-        EXT			= 9,			///< 协议定义描述等信息
-        Float       = 10,       /// 浮点 数
-        Bool        = 11,       ///布尔
-        Null        = 12,        ///空
+        EXT			= 9,			/// customer
+        Float       = 10,       /// float
+        Bool        = 11,       ///bool
+        Null        = 12,        ///null
 		SInteger1	= 13,		///< tiny int value (1字节)
 		SInteger2	= 14,		///< small int value (2字节)
 		SInteger4	= 15,		///< signed integer value(int32)(4字节)
@@ -741,6 +741,21 @@ public:
         return false;
     }
 
+	vector<string> keys() const
+	{
+		vector<string> keys;
+
+		if ( (DType::Map == m_ucType) && NULL != m_value.map )
+		{
+			MapType::iterator it = m_value.map->begin();
+			for(;it != m_value.map->end();++it)
+			{
+				keys.push_back(string(it->first.data(),it->first.size()));
+			}
+		}
+		return keys;
+	}
+
     //map
     void insert(const std::string& sName, const CAnyValue& oValue)
     {
@@ -800,6 +815,59 @@ public:
             m_value.map->erase(sName);
         }
     }
+
+
+	bool isObject()
+	{
+		if ( (DType::Map == m_ucType) && NULL != m_value.map )
+		{
+			return true;
+		}
+		return false;
+	}
+
+	bool isArray()
+	{
+		if ( (DType::Vector == m_ucType) && NULL != m_value.vec )
+		{
+			return true;
+		}
+		return false;
+	}
+
+	bool isString()
+	{
+		if ( (DType::String == m_ucType) && NULL != m_value.buf )
+		{
+			return true;
+		}
+		return false;
+	}
+
+	bool isBool()
+	{
+		return DType::Bool == m_ucType;
+	}
+
+	bool isNull()
+	{
+		return DType::Null == m_ucType;
+	}
+
+	bool isUInt()
+	{
+		return DType::Integer == m_ucType;
+	}
+
+	bool isInt()
+	{
+		return DType::SInteger == m_ucType;
+	}
+	
+	bool isFloat()
+	{
+		return DType::Float == m_ucType;
+	}
 
     void clear()
     {
@@ -2163,7 +2231,7 @@ public:
         return *(PKG_HEAD*)m_sEncodeData.data();
     }
 
-    void sethead(const PKG_HEAD& stHead)
+    void setHead(const PKG_HEAD& stHead)
     {
         memcpy((char*)m_sEncodeData.data(), &stHead, sizeof(stHead));
     }
@@ -2261,20 +2329,20 @@ public:
         return m_sEncodeData.size();
     }
 
-    const char* bodydata()
+    const char* getBodyData()
     {
         return m_sEncodeData.data()+sizeof(PKG_HEAD);
     }
-    const size_t bodysize()
+    const size_t getBodySize()
     {
         return m_sEncodeData.size()-sizeof(PKG_HEAD);
     }
 
-    void setbodydata(const unsigned char* pData, const size_t dwSize)
+    void setBodyData(const unsigned char* pData, const size_t dwSize)
     {
         this->setbodydata((char*)pData, dwSize);
     }
-    void setbodydata(const char* pData, const size_t dwSize)
+    void setBodyData(const char* pData, const size_t dwSize)
     {
         m_sEncodeData.replace(sizeof(PKG_HEAD),std::string::npos,  pData,dwSize);
     }
@@ -2308,18 +2376,17 @@ public:
         m_oAnyValues.clear();
         m_sEncodeData.erase(sizeof(PKG_HEAD));
     }
-    void clearbody()
+    void clearBody()
     {
         m_oAnyValues.clear();
     }
 
-    const CAnyValue& root() const
+    CAnyValue& root() 
     {
         return m_oAnyValues;
     }
 
-
-    void setroot(const CAnyValue& any)
+    void setRoot(const CAnyValue& any)
     {
         m_oAnyValues = any;
     }

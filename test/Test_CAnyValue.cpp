@@ -121,6 +121,16 @@ int main(int argc,char *argv[])
     oValue["xbv"]["x"];
 	oValue["xbv"]["big"] = ddwInt;
 
+	vector<string> vecKeys = oValue["xbv"].keys();
+	cout <<"keysize="<< vecKeys.size()<<endl;
+
+	for(int i=0;i<vecKeys.size();i++)
+	{
+		cout<<vecKeys[i]<<endl;
+	}
+
+	cout<<"is obj="<<oValue["xbv"].isObject()<<endl;
+
 	tolong(oValue);
 	ddwInt = oValue["xbv"]["big"].asUInt64();
 
