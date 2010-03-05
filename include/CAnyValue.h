@@ -1320,7 +1320,7 @@ private:
 	{
 		thisobj.m_ucType = DType::SInteger;
 		check(dwDecodePos+1, dwDataSize);
-		thisobj.m_value.integer = (unsigned char)*(unsigned char*)(pData+dwDecodePos);
+		thisobj.m_value.integer = *(char*)(pData+dwDecodePos);
 		++dwDecodePos;
 
 	}
@@ -1328,21 +1328,21 @@ private:
 	{
 		thisobj.m_ucType = DType::SInteger;
 		check(dwDecodePos+2, dwDataSize);
-		thisobj.m_value.integer = ntohs(*(unsigned short*)(pData+dwDecodePos));
+		thisobj.m_value.integer = (int16_t)ntohs(*(uint16_t*)(pData+dwDecodePos));
 		dwDecodePos += 2;
 	}
 	static void decode_sinteger4(size_t& dwDecodePos, const char* pData, const size_t dwDataSize, this_type& thisobj)
 	{
 		thisobj.m_ucType = DType::SInteger;
 		check(dwDecodePos+4, dwDataSize);
-		thisobj.m_value.integer = ntohl(*(uint32_t*)(pData+dwDecodePos));
+		thisobj.m_value.integer = (int32_t)ntohl(*(uint32_t*)(pData+dwDecodePos));
 		dwDecodePos += 4;
 	}
 	static void decode_sinteger8(size_t& dwDecodePos, const char* pData, const size_t dwDataSize, this_type& thisobj)
 	{
 		thisobj.m_ucType = DType::SInteger;
 		check(dwDecodePos+8, dwDataSize);
-		thisobj.m_value.integer = ntohll(*(uint64_t*)(pData+dwDecodePos));
+		thisobj.m_value.integer =(int64_t) ntohll(*(uint64_t*)(pData+dwDecodePos));
 		dwDecodePos += 8;
 	}
 
@@ -1927,18 +1927,20 @@ private:
 	static void encode_sinteger(std::string& sBuf, const ValueHolder& value)
 	{
 
-		if ( value.integer < 0xFF )
+		int64_t iValue = (int64_t)value.integer;
+
+		if(iValue > -129)
 		{
 			sBuf.push_back((char)DType::SInteger1);
 			sBuf.push_back((char)value.integer);
 		}
-		else if ( value.integer <= 0xFFFF )
+		else if(iValue > -32769)
 		{
 			sBuf.push_back((char)DType::SInteger2);
-			unsigned short wTmp = htons(static_cast<unsigned short>(value.integer));
+			unsigned short wTmp = htons(static_cast<uint16_t>(value.integer));
 			sBuf.append(reinterpret_cast<char*>(&wTmp),sizeof(wTmp));
 		}
-		else if (value.integer <= 0xFFFFFFFF )
+		else if(iValue > -2147483649)
 		{
 			sBuf.push_back((char)DType::SInteger4);
 			uint32_t dwTmp = htonl(static_cast<uint32_t>(value.integer));
