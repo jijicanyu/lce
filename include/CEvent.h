@@ -12,7 +12,9 @@
 #include <string.h>
 #include <queue>
 #include <set>
-#include<tr1/unordered_map>
+#include <tr1/unordered_map>
+#include <tr1/memory>
+#include <tr1/functional>
 #include <algorithm>
 #include <fcntl.h>
 #include <iostream>
@@ -20,17 +22,15 @@ using namespace std;
 
 namespace lce
 {
-typedef void (*FdEventCb)(int iFd,void *pData);
-typedef void (*TimeEventCb)(int iTimeId,void *pData);
-typedef void (*MsgEventCb)(int iMsgType,void *pData);
 
+typedef tr1::function <void (int,void*)> HandlerEvent;
 const int EPOLL_MAX_EVENT = 1024;
 const int EPOLL_WAIT_TIMEOUT = 3000;
 
 class CEvent
 {
 public:
-
+	
 	typedef tr1::unordered_map<int,uint64_t> MAP_TIME_INDEX;
 
     enum EventType
@@ -49,8 +49,8 @@ public:
     typedef struct
     {
         int iEventType;
-        FdEventCb pReadProc;
-        FdEventCb pWriteProc;
+		HandlerEvent onRead;
+		HandlerEvent onWrite;
         void *pClientRData;
         void *pClientWData;
     } SFdEvent;
@@ -59,14 +59,14 @@ public:
     {
         int iTimerId;
         uint64_t ddwMillSecs;
-        TimeEventCb pTimeProc;
+		HandlerEvent onTimer;
         void *pClientData;
     } STimeEvent;
 
     typedef struct
     {
         int iMsgType;
-        MsgEventCb pMsgProc;
+		HandlerEvent onMessage;
         void *pClientData;
     } SMsgEvent;
 
@@ -86,12 +86,12 @@ public:
     ~CEvent();
 
     int init(uint32_t dwMaxFdNum = 10000);
-    int addFdEvent(int iWatchFd,int iEventType,FdEventCb pFdCb,void * pClientData);
+    int addFdEvent(int iWatchFd,int iEventType,const HandlerEvent &onEvent,void * pClientData);
     int delFdEvent(int iWatchFd,int iEventType);
 
-    int addTimer(int iTimerId,uint32_t dwExpire,TimeEventCb pTimeCb,void * pClientData);
+    int addTimer(int iTimerId,uint32_t dwExpire,const HandlerEvent &onEvent,void * pClientData);
     int delTimer(int iTimerId);
-    int addMessage(int iMsgType,MsgEventCb pMsgCb,void * pClientData);
+    int addMessage(int iMsgType,const HandlerEvent &onEvent,void * pClientData);
 
     int run();
     int stop();

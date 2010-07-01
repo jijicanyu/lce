@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <tr1/memory>
+#include <tr1/functional>
 #include "Utils.h"
 #include "CSocketBuf.h"
 #include "CPackageFilter.h"
@@ -16,7 +18,7 @@
 #include "CProcessor.h"
 
 using namespace std;
-
+using namespace tr1;
 namespace lce
 {
 
@@ -176,15 +178,12 @@ public:
 
 public:
 
-    static void onWrite(int iFd,void *pData);
-    static void onTcpRead(int iFd,void *pData);
-    static void onUdpRead(int iFd,void *pData);
+    void onWrite(int iFd,void *pData);
+    void onTcpRead(int iFd,void *pData);
+    void onUdpRead(int iFd,void *pData);
+    void onConnect(int iFd,void *pData);
+    void onAccept(int iFd,void *pData);
 
-    static void onConnect(int iFd,void *pData);
-
-    static void onAccept(int iFd,void *pData);
-    static void onTimer(int iTimerId,void *pData);
-	static void onMessage(int iMsgType,void *pData);
 	static void onSignal(int iSignal);
 
     static CCommMgr & getInstance()
@@ -207,7 +206,6 @@ private:
 private:
     vector <SServerInfo *> m_vecServers;
     vector <SClientInfo> m_vecClients;
-	MAP_TIMER_PROC m_mapTimeProcs;
 	map<int,CProcessor*> m_mapSigProcs;
     CEvent m_oCEvent;
     char m_szErrMsg[1024];

@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include <fstream>
 #include "../include/CAnyValue.h"
 #include "stdio.h"
@@ -17,6 +17,7 @@ void tolong(const CAnyValue &oValue)
 void tolong(unsigned int lValue)
 {
 	cout<<"2----";
+	
 }
 
 int main(int argc,char *argv[])
@@ -68,7 +69,7 @@ int main(int argc,char *argv[])
 
 	cout<<"span5="<<t2-t1<<endl;
 
-
+	
 	CAnyValue oValue7;
 	gettimeofday(&tv1, 0);
 	t1 = tv1.tv_sec * 1000000 + tv1.tv_usec;
@@ -98,7 +99,8 @@ int main(int argc,char *argv[])
 	uint64_t ddwInt = 0xffffffffffffffff;
 
 	cout<<"ddwInt="<<ddwInt<<endl;
-
+	
+		
 
     CAnyValue oValue;
     oValue["abc"]=1;
@@ -120,10 +122,9 @@ int main(int argc,char *argv[])
     oValue["xbv"]["xxxx"] =true;
     oValue["xbv"]["x"];
 	oValue["xbv"]["big"] = ddwInt;
-
 	vector<string> vecKeys = oValue["xbv"].keys();
 	cout <<"keysize="<< vecKeys.size()<<endl;
-
+	
 	for(int i=0;i<vecKeys.size();i++)
 	{
 		cout<<vecKeys[i]<<endl;
@@ -135,7 +136,6 @@ int main(int argc,char *argv[])
 	ddwInt = oValue["xbv"]["big"].asUInt64();
 
 	cout<<"ddwInt="<<ddwInt<<endl;
-
 
 	string sData;
 	string sData2;

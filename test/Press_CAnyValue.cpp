@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include <fstream>
 #include "../CAnyValue.h"
 #include "stdio.h"

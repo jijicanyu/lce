@@ -198,9 +198,6 @@ bool CAsyncLog::writeBuffer(const std::string &str, const bool bEnd)
 	return true;
 }
 
-
-
-
 bool CAsyncLog::write(const char *sFormat, ...)
 {
 

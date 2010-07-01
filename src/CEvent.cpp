@@ -20,7 +20,6 @@ CEvent::CEvent()
 CEvent::~CEvent()
 {
     ::pthread_mutex_destroy(&m_lock);
-
     if(m_iMsgFd[0] >=0 )  ::close(m_iMsgFd[0]);
     if(m_iMsgFd[1] >=0 )  ::close(m_iMsgFd[1]);
 
@@ -62,8 +61,6 @@ int CEvent::init(uint32_t dwMaxFdNum /* = 10000 */)
     for(int i=0;i< (int)dwMaxFdNum;i++)
     {
         m_stFdEvents[i].iEventType=EV_DONE;
-        m_stFdEvents[i].pReadProc = NULL;
-        m_stFdEvents[i].pWriteProc = NULL;
         m_stFdEvents[i].pClientRData = NULL;
         m_stFdEvents[i].pClientWData = NULL;
     }
@@ -97,7 +94,7 @@ int CEvent::init(uint32_t dwMaxFdNum /* = 10000 */)
 }
 
 
-int CEvent::addFdEvent ( int iWatchFd, int iEventType, FdEventCb pFdCb,void * pClientData=NULL)
+int CEvent::addFdEvent ( int iWatchFd, int iEventType, const HandlerEvent &onEvent,void * pClientData=NULL)
 {
 
     if (iWatchFd >= (int)m_dwMaxFdNum || iWatchFd < 0)
@@ -124,13 +121,13 @@ int CEvent::addFdEvent ( int iWatchFd, int iEventType, FdEventCb pFdCb,void * pC
 
     if(iEventType & EV_READ)
     {
-        m_stFdEvents[iWatchFd].pReadProc=pFdCb;
+        m_stFdEvents[iWatchFd].onRead = onEvent;
         m_stFdEvents[iWatchFd].pClientRData = pClientData;
     }
 
     if(iEventType & EV_WRITE)
     {
-        m_stFdEvents[iWatchFd].pWriteProc=pFdCb;
+        m_stFdEvents[iWatchFd].onWrite = onEvent;
         m_stFdEvents[iWatchFd].pClientWData = pClientData;
     }
 
@@ -229,7 +226,7 @@ int CEvent::delTimer(int iTimerId)
   *
   * (documentation goes here)
   */
-int CEvent::addTimer(int iTimerId,uint32_t dwExpire, TimeEventCb pTimeCb, void* pClientData)
+int CEvent::addTimer(int iTimerId,uint32_t dwExpire, const HandlerEvent &onEvent, void* pClientData)
 {
 
 	MAP_TIME_INDEX::iterator it = m_mapTimeEventIndexs.find(iTimerId);
@@ -244,7 +241,7 @@ int CEvent::addTimer(int iTimerId,uint32_t dwExpire, TimeEventCb pTimeCb, void* 
     stTimeEvent.ddwMillSecs = CEvent::getMillSecsNow()+dwExpire;
     stTimeEvent.iTimerId=iTimerId;
     stTimeEvent.pClientData=pClientData;
-    stTimeEvent.pTimeProc=pTimeCb;
+    stTimeEvent.onTimer=onEvent;
 
     m_mapTimeEventIndexs[iTimerId] = stTimeEvent.ddwMillSecs;
 
@@ -254,11 +251,11 @@ int CEvent::addTimer(int iTimerId,uint32_t dwExpire, TimeEventCb pTimeCb, void* 
 }
 
 
-int CEvent::addMessage(int iMsgType,MsgEventCb pMsgCb,void * pClientData)
+int CEvent::addMessage(int iMsgType,const HandlerEvent &onEvent,void * pClientData)
 {
     SMsgEvent stMsgEvent;
     stMsgEvent.iMsgType= iMsgType;
-    stMsgEvent.pMsgProc = pMsgCb;
+    stMsgEvent.onMessage = onEvent;
     stMsgEvent.pClientData = pClientData;
 
     ::pthread_mutex_lock(&m_lock);
@@ -312,12 +309,13 @@ int CEvent::run()
 
 					void *pClientData = it->pClientData;
 					int iTimerId = it->iTimerId;
-					TimeEventCb  pTimeProc = it->pTimeProc;
+
+					HandlerEvent onTimer = it->onTimer;
 
 					m_mapTimeEventIndexs.erase(it->iTimerId);
 					m_setSTimeEvents.erase(it);
 
-					if( pTimeProc )	pTimeProc(iTimerId,pClientData);
+					onTimer(iTimerId,pClientData);
 				}
 				else
 				{
@@ -362,8 +360,7 @@ int CEvent::run()
 
 						if(bHaveMsg)
 						{
-							if (stMsgEvent.pMsgProc)
-								stMsgEvent.pMsgProc(stMsgEvent.iMsgType,stMsgEvent.pClientData);
+							stMsgEvent.onMessage(stMsgEvent.iMsgType,stMsgEvent.pClientData);
 						}
 						else
 						{
@@ -375,16 +372,16 @@ int CEvent::run()
                 else
                 {
                     SFdEvent &stFdEvent = m_stFdEvents[m_stEPollState.stEvents[i].data.fd];
-                    if(stFdEvent.pReadProc && (stFdEvent.iEventType&EV_READ) == EV_READ)
-                        stFdEvent.pReadProc(m_stEPollState.stEvents[i].data.fd,stFdEvent.pClientRData);
+                    if((stFdEvent.iEventType&EV_READ) == EV_READ)
+                        stFdEvent.onRead(m_stEPollState.stEvents[i].data.fd,stFdEvent.pClientRData);
                 }
             }
             if(m_stEPollState.stEvents[i].events & EPOLLOUT)
             {
 
                 SFdEvent &stFdEvent=m_stFdEvents[m_stEPollState.stEvents[i].data.fd];
-                if(stFdEvent.pWriteProc && (stFdEvent.iEventType&EV_WRITE) == EV_WRITE)
-                    stFdEvent.pWriteProc(m_stEPollState.stEvents[i].data.fd,stFdEvent.pClientWData);
+                if((stFdEvent.iEventType&EV_WRITE) == EV_WRITE)
+                    stFdEvent.onWrite(m_stEPollState.stEvents[i].data.fd,stFdEvent.pClientWData);
             }
         }
 
