@@ -67,6 +67,7 @@ namespace lce
 		}
 	};
 
+
 	struct SServerInfo
 	{
 		SServerInfo()

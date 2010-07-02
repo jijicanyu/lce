@@ -1,6 +1,5 @@
 #include "CAsyncLog.h"
 
-
 namespace lce
 {
 

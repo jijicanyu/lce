@@ -150,6 +150,7 @@ int main(int argc,char *argv[])
 
     oValue.encodeJSON(sData3);
 
+
 	cout<<"json="<<sData3<<endl;
 
 	oValue.encode(sData2);

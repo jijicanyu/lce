@@ -14,7 +14,7 @@ int CCommMgr::createSrv(int iType,const string &sIp,uint16_t wPort,uint32_t dwIn
         return -1;
     }
 
-    SServerInfo *pstServerInfo=new SServerInfo;
+	SServerInfo *pstServerInfo=new SServerInfo;
 
     pstServerInfo->sIp=sIp;
     pstServerInfo->wPort=wPort;
@@ -25,7 +25,7 @@ int CCommMgr::createSrv(int iType,const string &sIp,uint16_t wPort,uint32_t dwIn
 
     pstServerInfo->dwInitSendBufLen=dwInitSendBufLen;
     pstServerInfo->dwMaxSendBufLen=dwMaxSendBufLen;
-
+	
 
     if (iType == SRV_TCP)
     {

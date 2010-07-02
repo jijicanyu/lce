@@ -910,7 +910,6 @@ public:
         m_bHasData = false;
     }
 
-
     ~CAnyValue()
     {
         this->clear();
