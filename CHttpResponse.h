@@ -224,7 +224,7 @@ void CHttpResponse::begin()
 	m_mapCookie.clear();
 	m_sBodyContent.erase();
 	m_iStatusCode = 200;
-	m_sConnection = "close";
+	m_sConnection = "Close";
 	m_sContentType = "text/html";
 	m_dwSetBodyLen = 0;
 	m_sCacheControl.erase();
