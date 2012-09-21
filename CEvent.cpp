@@ -8,7 +8,7 @@ CEvent::CEvent()
 {
     ::pthread_mutex_init(&m_lock,0);
     m_bRun=true;
-    m_stFdEvents=NULL;
+    m_stFdEvents = NULL;
     m_stEPollState.iEPollFd= -1;
     memset(m_szTimeEventIndexs,0,sizeof(m_szTimeEventIndexs));
     m_iMsgFd[0]=-1;
@@ -76,6 +76,10 @@ int CEvent::init()
     for(int i=0;i<EPOLL_MAX_SIZE;i++)
     {
         m_stFdEvents[i].iEventType=EV_DONE;
+        m_stFdEvents[i].pReadProc = NULL;
+        m_stFdEvents[i].pWriteProc = NULL;
+        m_stFdEvents[i].pClientRData = NULL;
+        m_stFdEvents[i].pClientWData = NULL;
     }
 
     if( pipe(m_iMsgFd) != 0)
@@ -131,10 +135,17 @@ int CEvent::addFdEvent ( int iWatchFd, int iEventType, fdEventCb pFdCb,void * pC
     stEvent.data.u64 = 0; /* avoid valgrind warning */
     stEvent.data.fd = iWatchFd;
 
-    m_stFdEvents[iWatchFd].pClientData=pClientData;
+    if(iEventType & EV_READ)
+    {
+        m_stFdEvents[iWatchFd].pReadProc=pFdCb;
+        m_stFdEvents[iWatchFd].pClientRData = pClientData;
+    }
 
-    if(iEventType & EV_READ)    m_stFdEvents[iWatchFd].pReadProc=pFdCb;
-    if(iEventType & EV_WRITE)     m_stFdEvents[iWatchFd].pWriteProc=pFdCb;
+    if(iEventType & EV_WRITE)
+    {
+        m_stFdEvents[iWatchFd].pWriteProc=pFdCb;
+        m_stFdEvents[iWatchFd].pClientWData = pClientData;
+    }
 
     if(epoll_ctl(m_stEPollState.iEPollFd,iOP,iWatchFd,&stEvent)== -1)
     {
@@ -231,7 +242,7 @@ int CEvent::delTimer(uint32_t dwTimerId)
         }
     }
     delete pstTimeEvent;
-    m_szTimeEventIndexs[dwTimerId]=0;
+    m_szTimeEventIndexs[dwTimerId] = 0;
 
     return 0;
 
@@ -303,37 +314,43 @@ int CEvent::run()
 
     while(m_bRun)
     {
-        uint64_t ddwTimeNow=CEvent::getMillSecsNow();
+
         uint64_t ddwExpire = EPOLL_WAIT_TIMEOUT;
 
-        for(multiset<STimeEvent*>::iterator it=m_setSTimeEvents.begin();it!=m_setSTimeEvents.end();)
+        if (!m_setSTimeEvents.empty())
         {
-            if ((*it)->ddwMillSecs<= ddwTimeNow)
+            uint64_t ddwTimeNow = CEvent::getMillSecsNow();
+
+            for(multiset<STimeEvent*>::iterator it=m_setSTimeEvents.begin();it!=m_setSTimeEvents.end();)
             {
-                STimeEvent * pstTimeEvent=(*it);
-                m_szTimeEventIndexs[(*it)->dwTimerId] = 0;
-                m_setSTimeEvents.erase(it++);
+                if ((*it)->ddwMillSecs<= ddwTimeNow)
+                {
+                    STimeEvent * pstTimeEvent=(*it);
+                    m_szTimeEventIndexs[(*it)->dwTimerId] = 0;
+                    m_setSTimeEvents.erase(it++);
 
-                if( pstTimeEvent->pTimeProc )
-                    pstTimeEvent->pTimeProc(pstTimeEvent->dwTimerId,pstTimeEvent->pClientData);
-                delete pstTimeEvent;
+                    if( pstTimeEvent->pTimeProc )
+                        pstTimeEvent->pTimeProc(pstTimeEvent->dwTimerId,pstTimeEvent->pClientData);
+                    delete pstTimeEvent;
 
+
+                }
+                else
+                {
+                    multiset<STimeEvent*>::iterator it=m_setSTimeEvents.begin();
+                    if(it!=m_setSTimeEvents.end() && ((*it)->ddwMillSecs-ddwTimeNow) > 0 )
+                        ddwExpire=(*it)->ddwMillSecs-ddwTimeNow;
+                    break;
+                }
 
             }
-            else
-            {
-                multiset<STimeEvent*>::iterator it=m_setSTimeEvents.begin();
-                if(it!=m_setSTimeEvents.end() && ((*it)->ddwMillSecs-ddwTimeNow) > 0 )
-                    ddwExpire=(*it)->ddwMillSecs-ddwTimeNow;
-                break;
-            }
-
         }
 
         int iEventNum=epoll_wait(m_stEPollState.iEPollFd,m_stEPollState.stEvents,EPOLL_MAX_EVENT,ddwExpire);
 
         for(int i=0;i<iEventNum;i++)
         {
+
             if((m_stEPollState.stEvents[i].events & EPOLLIN) ||
                (m_stEPollState.stEvents[i].events & EPOLLERR) ||
                (m_stEPollState.stEvents[i].events & EPOLLHUP))
@@ -364,7 +381,7 @@ int CEvent::run()
                 {
                     SFdEvent &stFdEvent=m_stFdEvents[m_stEPollState.stEvents[i].data.fd];
                     if(stFdEvent.pReadProc)
-                        stFdEvent.pReadProc(m_stEPollState.stEvents[i].data.fd,stFdEvent.pClientData);
+                        stFdEvent.pReadProc(m_stEPollState.stEvents[i].data.fd,stFdEvent.pClientRData);
                 }
             }
             if(m_stEPollState.stEvents[i].events & EPOLLOUT)
@@ -372,7 +389,7 @@ int CEvent::run()
 
                 SFdEvent &stFdEvent=m_stFdEvents[m_stEPollState.stEvents[i].data.fd];
                 if(stFdEvent.pWriteProc)
-                    stFdEvent.pWriteProc(m_stEPollState.stEvents[i].data.fd,stFdEvent.pClientData);
+                    stFdEvent.pWriteProc(m_stEPollState.stEvents[i].data.fd,stFdEvent.pClientWData);
             }
         }
 

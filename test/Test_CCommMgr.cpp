@@ -1,17 +1,17 @@
 #include <iostream>
-#include "Utils.h"
-#include "CEvent.h"
-#include "CCommMgr.h"
-#include "CH2ShortT3PackageFilter.h"
-#include "CRawPackageFilter.h"
-#include "CPackage.h"
-#include "CHttpPackageFilter.h"
-#include "CHttpParser.h"
-#include "CHttpResponse.h"
-#include "CTask.h"
+#include "../Utils.h"
+#include "../CEvent.h"
+#include "../CCommMgr.h"
+#include "../CH2ShortT3PackageFilter.h"
+#include "../CRawPackageFilter.h"
+#include "../CPackage.h"
+#include "../CHttpPackageFilter.h"
+#include "../CHttpParser.h"
+#include "../CHttpResponse.h"
+#include "../CTask.h"
 
 using namespace std;
-using namespace nce;
+using namespace lce;
 
 int iSrv1,iSrv2,iSrv3,iSrv4,iSrv5,iSrv6,iSrv7;
 
@@ -135,7 +135,7 @@ void onClose(SSession &stSession)
 }
 void onConnect(SSession &stSession,bool bOk)
 {
-
+/*
     string sHello="helloworld";
     CPackage<SHead> oPkg;
 
@@ -149,6 +149,7 @@ void onConnect(SSession &stSession,bool bOk)
 
     CCommMgr::getInstance().write(stSession,oPkg.data(),oPkg.size(),false);
     cout<< "onConnect"<<endl;
+*/
 }
 void onError(char * szErrMsg)
 {
