@@ -131,10 +131,12 @@ bool onRead(SSession &stSession,const char * pszData, const int iSize)
 
 void onClose(SSession &stSession)
 {
+    printf("onclose id=%d\n",stSession.iFd);
     //cout<< "onClose"<<endl;
 }
 void onConnect(SSession &stSession,bool bOk)
 {
+    printf("onconnect id=%d\n",stSession.iFd);
 /*
     string sHello="helloworld";
     CPackage<SHead> oPkg;
@@ -166,7 +168,7 @@ void onTimer(uint32_t dwTimerId,void *pData)
     }
     else if(dwTimerId ==1)
     {
-        //CCommMgr::getInstance().connect(iSrv6,"127.0.0.1",3000);
+        CCommMgr::getInstance().connect(iSrv6,"127.0.0.11",3000);
     }
     else if(dwTimerId ==2)
     {

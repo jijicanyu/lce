@@ -35,6 +35,7 @@ int close(const int iFd)
 
 int setNCloseWait(const int iFd)
 {
+    /*
     linger sLinger;
     sLinger.l_onoff = 0;  // (在closesocket()调用,但是还有数据没发送完毕的时候容许逗留)
     sLinger.l_linger = 0; // (容许逗留的时间为0秒)
@@ -42,6 +43,7 @@ int setNCloseWait(const int iFd)
     {
         return -1;
     }
+    */
     // 如果服务器终止后,服务器可以第二次快速启动而不用等待一段时间
     int nREUSEADDR = 1;
     if(setsockopt(iFd, SOL_SOCKET, SO_REUSEADDR, (const char*)&nREUSEADDR, sizeof(int)) != 0)

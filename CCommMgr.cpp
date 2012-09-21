@@ -299,6 +299,8 @@ void CCommMgr::onTcpRead(int iFd,void *pData)
 
         if(pstClientInfo->pSocketRecvBuf == NULL)
         {
+            CCommMgr::getInstance().close(iFd);
+
             snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"%s,%d,no memory for recv buf",__FILE__,__LINE__);
             if (pstServerInfo->pOnError != NULL)
                 pstServerInfo->pOnError(CCommMgr::getInstance().m_szErrMsg);
@@ -316,8 +318,8 @@ void CCommMgr::onTcpRead(int iFd,void *pData)
     if(pstClientInfo->pSocketRecvBuf->getFreeSize() == 0)
     {
         //print error no buf size
-        snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"%s,%d,socket buf no memory",__FILE__,__LINE__);
         CCommMgr::getInstance().close(iFd);
+        snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"%s,%d,socket buf no memory",__FILE__,__LINE__);
         return pstServerInfo->pOnError(CCommMgr::getInstance().m_szErrMsg);
 
     }
@@ -345,6 +347,7 @@ void CCommMgr::onTcpRead(int iFd,void *pData)
             if (pstServerInfo->pOnRead != NULL)
                 pstServerInfo->pOnRead(stSession,pstClientInfo->pSocketRecvBuf->getData(),iPkgLen);
 
+
             if(CCommMgr::getInstance().isClose(iFd))
                 break;
 
@@ -371,11 +374,7 @@ void CCommMgr::onTcpRead(int iFd,void *pData)
         stSession.stClientAddr=pstClientInfo->stClientAddr;
         if (pstServerInfo->pOnClose != NULL)
             pstServerInfo->pOnClose(stSession);
-
         CCommMgr::getInstance().close(iFd);
-
-
-
     }
     else
     {
@@ -411,6 +410,7 @@ void CCommMgr::onAccept(int iFd,void *pData)
 
 
     int iClientSock=accept(iFd, (struct sockaddr *) &pstClientInfo->stClientAddr,(socklen_t *)&iAddrLen);
+    CCommMgr::getInstance().m_oCEvent.addFdEvent(iClientSock,CEvent::EV_READ,CCommMgr::onTcpRead,pstClientInfo);
 
     if (iClientSock < 0)
     {
@@ -420,11 +420,12 @@ void CCommMgr::onAccept(int iFd,void *pData)
         delete pstClientInfo;
         return;
     }
-    pstClientInfo->iFd=iClientSock;
 
+    CCommMgr::getInstance().m_vecClients[iClientSock]=pstClientInfo;
+
+    pstClientInfo->iFd=iClientSock;
     lce::setNCloseWait(iClientSock);
     lce::setNBlock(iClientSock);
-
 
     SSession stSession;
     stSession.dwBeginTime=lce::getTickCount();
@@ -432,10 +433,8 @@ void CCommMgr::onAccept(int iFd,void *pData)
     stSession.iSvrId=pstServerInfo->iSrvId;
     stSession.stClientAddr=pstClientInfo->stClientAddr;
 
-    if (pstServerInfo->pOnConnect)   pstServerInfo->pOnConnect(stSession,true);
 
-    CCommMgr::getInstance().m_vecClients[iClientSock]=pstClientInfo;
-    CCommMgr::getInstance().m_oCEvent.addFdEvent(iClientSock,CEvent::EV_READ,CCommMgr::onTcpRead,pstClientInfo);
+    if (pstServerInfo->pOnConnect)   pstServerInfo->pOnConnect(stSession,true);
 
 }
 
@@ -479,51 +478,26 @@ int CCommMgr::write(const SSession &stSession,const char* pszData, const int iSi
     SServerInfo * pstServerInfo=m_vecServers[stSession.iSvrId];
 
     pstClientInfo->bNeedClose=bClose;
+    int iSendBufSize = 0 ;
+    int iSendSize = 0;
 
-    if(pstClientInfo->pSocketSendBuf == NULL)
+    if(pstClientInfo->pSocketSendBuf == NULL || pstClientInfo->pSocketSendBuf->getSize() == 0)
     {
-        pstClientInfo->pSocketSendBuf=new CSocketBuf(pstServerInfo->dwInitSendBufLen,pstServerInfo->dwMaxSendBufLen);
-        if(pstClientInfo->pSocketSendBuf == NULL)
-        {
-            snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"%s,%d,no memory for send buf",__FILE__,__LINE__);
-            return -1;
-        }
+        iSendSize=lce::send(stSession.iFd,pszData,iSize);
 
-    }
-
-    int iSendBufSize=pstClientInfo->pSocketSendBuf->getSize();
-
-    if(iSendBufSize > 0)
-    {
-        int iSendSize=lce::send(stSession.iFd,pstClientInfo->pSocketSendBuf->getData(),iSendBufSize);
-        if (iSendSize > 0 )
-        {
-            pstClientInfo->pSocketSendBuf->removeData(iSendSize);
-            iSendBufSize -= iSendSize;
-        }
-        else
-        {
-            if (errno != EAGAIN)
-            {
-                snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
-                close(stSession.iFd);
-                return -1;
-            }
-        }
-    }
-
-    if( iSendBufSize > 0)
-    {
-        pstClientInfo->pSocketSendBuf->addData(pszData,iSize);
-        m_oCEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CCommMgr::onWrite,pstClientInfo);
-    }
-    else
-    {
-        int iSendSize=lce::send(stSession.iFd,pszData,iSize);
         if(iSendSize > 0 )
         {
             if (iSendSize < iSize)
             {
+                if(pstClientInfo->pSocketSendBuf == NULL)
+                {
+                    pstClientInfo->pSocketSendBuf=new CSocketBuf(pstServerInfo->dwInitSendBufLen,pstServerInfo->dwMaxSendBufLen);
+                    if(pstClientInfo->pSocketSendBuf == NULL)
+                    {
+                        snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"%s,%d,no memory for send buf",__FILE__,__LINE__);
+                        return -1;
+                    }
+                }
                 pstClientInfo->pSocketSendBuf->addData(pszData+iSendSize,iSize-iSendSize);
                 m_oCEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CCommMgr::onWrite,pstClientInfo);
             }
@@ -543,6 +517,15 @@ int CCommMgr::write(const SSession &stSession,const char* pszData, const int iSi
         {
             if( errno == EAGAIN )
             {
+                if(pstClientInfo->pSocketSendBuf == NULL)
+                {
+                    pstClientInfo->pSocketSendBuf=new CSocketBuf(pstServerInfo->dwInitSendBufLen,pstServerInfo->dwMaxSendBufLen);
+                    if(pstClientInfo->pSocketSendBuf == NULL)
+                    {
+                        snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"%s,%d,no memory for send buf",__FILE__,__LINE__);
+                        return -1;
+                    }
+                }
                 pstClientInfo->pSocketSendBuf->addData(pszData,iSize);
                 m_oCEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CCommMgr::onWrite,pstClientInfo);
             }
@@ -551,6 +534,69 @@ int CCommMgr::write(const SSession &stSession,const char* pszData, const int iSi
                 snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
                 close(stSession.iFd);
                 return -1;
+            }
+        }
+
+    }
+    else if((iSendBufSize = pstClientInfo->pSocketSendBuf->getSize()) > 0)
+    {
+
+        int iSendSize=lce::send(stSession.iFd,pstClientInfo->pSocketSendBuf->getData(),iSendBufSize);
+        if (iSendSize > 0 )
+        {
+            pstClientInfo->pSocketSendBuf->removeData(iSendSize);
+            iSendBufSize -= iSendSize;
+        }
+        else
+        {
+            if (errno != EAGAIN)
+            {
+                snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
+                close(stSession.iFd);
+                return -1;
+            }
+        }
+
+        if( iSendBufSize > 0)
+        {
+            pstClientInfo->pSocketSendBuf->addData(pszData,iSize);
+            m_oCEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CCommMgr::onWrite,pstClientInfo);
+        }
+        else
+        {
+            int iSendSize=lce::send(stSession.iFd,pszData,iSize);
+            if(iSendSize > 0 )
+            {
+                if (iSendSize < iSize)
+                {
+                    pstClientInfo->pSocketSendBuf->addData(pszData+iSendSize,iSize-iSendSize);
+                    m_oCEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CCommMgr::onWrite,pstClientInfo);
+                }
+                else
+                {
+                    if(bClose)
+                    {
+                        close(stSession.iFd);
+                    }
+                    else
+                    {
+                         m_oCEvent.delFdEvent(stSession.iFd,CEvent::EV_WRITE);
+                    }
+                }
+            }
+            else
+            {
+                if( errno == EAGAIN )
+                {
+                    pstClientInfo->pSocketSendBuf->addData(pszData,iSize);
+                    m_oCEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CCommMgr::onWrite,pstClientInfo);
+                }
+                else
+                {
+                    snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
+                    close(stSession.iFd);
+                    return -1;
+                }
             }
         }
     }
