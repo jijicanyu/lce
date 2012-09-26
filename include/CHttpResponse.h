@@ -12,24 +12,6 @@ using std::string;
 namespace lce
 {
 
-
-/*
-	StatusCode
-      o 1xx: Informational - Not used, but reserved for future use
-
-      o 2xx: Success - The action was successfully received,
-             understood, and accepted.
-
-      o 3xx: Redirection - Further action must be taken in order to
-             complete the request
-
-      o 4xx: Client Error - The request contains bad syntax or cannot
-             be fulfilled
-
-      o 5xx: Server Error - The server failed to fulfill an apparently
-             valid request
-*/
-
 class CHttpResponse
 {
 	typedef CHttpResponse this_type;
@@ -242,7 +224,7 @@ void CHttpResponse::begin()
 	m_mapCookie.clear();
 	m_sBodyContent.erase();
 	m_iStatusCode = 200;
-	m_sConnection = "close";
+	m_sConnection = "Close";
 	m_sContentType = "text/html";
 	m_dwSetBodyLen = 0;
 	m_sCacheControl.erase();

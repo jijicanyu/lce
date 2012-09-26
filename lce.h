@@ -18,5 +18,6 @@
 #include "CFIFOBuffer.h"
 #include "CFIFOBufferByHead.h"
 #include "Utils.h"
+#include "CAnyValue.h"
 
 #endif

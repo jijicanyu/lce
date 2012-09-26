@@ -40,7 +40,13 @@ public:
         pstRequest->stSession=stSession;
 
         pstRequest->oParser.setData(pszData,iSize);
-        CProCenter::getInstance().dispatch(100,pstRequest);
+        pstRequest->oResponse.begin();
+        pstRequest->oResponse.setStatusCode(200);
+        pstRequest->oResponse<<"Hello world";
+        pstRequest->oResponse.end();
+        CCommMgr::getInstance().write(pstRequest->stSession,pstRequest->oResponse.data(),pstRequest->oResponse.size(),true);
+        delete pstRequest;
+        //CProCenter::getInstance().dispatch(100,pstRequest);
 
     }
 
@@ -131,12 +137,12 @@ bool onRead(SSession &stSession,const char * pszData, const int iSize)
 
 void onClose(SSession &stSession)
 {
-    printf("onclose id=%d\n",stSession.iFd);
+    //printf("onclose id=%d\n",stSession.iFd);
     //cout<< "onClose"<<endl;
 }
 void onConnect(SSession &stSession,bool bOk)
 {
-    printf("onconnect id=%d\n",stSession.iFd);
+    //printf("onconnect id=%d\n",stSession.iFd);
 /*
     string sHello="helloworld";
     CPackage<SHead> oPkg;

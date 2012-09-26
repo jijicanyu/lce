@@ -75,9 +75,6 @@
 		<Unit filename="test\Test_CCommMgr.cpp" />
 		<Unit filename="test\Test_CEvent.cpp" />
 		<Unit filename="test\Test_CTask.cpp" />
-		<Unit filename="test\Test_CThread.c">
-			<Option compilerVar="CC" />
-		</Unit>
 		<Unit filename="test\Test_CThread.cpp" />
 		<Unit filename="test\Test_shm.cpp" />
 		<Extensions>

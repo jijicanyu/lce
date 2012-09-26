@@ -44,15 +44,16 @@ public:
 
     typedef struct
     {
-        int iEventType; /* one of EV_(READ|WRITE) */
+        int iEventType;
         fdEventCb pReadProc;
         fdEventCb pWriteProc;
-        void *pClientData;
+        void *pClientRData;
+        void *pClientWData;
     } SFdEvent;
 
     typedef struct
     {
-        uint32_t dwTimerId; /* one of EV_(READ|WRITE) */
+        uint32_t dwTimerId;
         uint64_t ddwMillSecs;
         timeEventCb pTimeProc;
         void *pClientData;
@@ -60,7 +61,7 @@ public:
 
     typedef struct
     {
-        uint32_t dwMsgType; /* one of EV_(READ|WRITE) */
+        uint32_t dwMsgType;
         msgEventCb pMsgProc;
         void *pClientData;
     } SMsgEvent;
