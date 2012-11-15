@@ -21,6 +21,7 @@ struct SRequest
     SSession stSession;
     CHttpParser oParser;
     CHttpResponse oResponse;
+	
 };
 
 class CProCenter : public CTask
@@ -38,7 +39,6 @@ public:
         SRequest *pstRequest=new SRequest;
 
         pstRequest->stSession=stSession;
-
         pstRequest->oParser.setData(pszData,iSize);
         pstRequest->oResponse.begin();
         pstRequest->oResponse.setStatusCode(200);
@@ -47,6 +47,7 @@ public:
         CCommMgr::getInstance().write(pstRequest->stSession,pstRequest->oResponse.data(),pstRequest->oResponse.size(),true);
         delete pstRequest;
         //CProCenter::getInstance().dispatch(100,pstRequest);
+		//CProCenter::getInstance().dispatch()
 
     }
 
@@ -60,7 +61,6 @@ public:
         pstRequest->oResponse.setStatusCode(200);
         pstRequest->oResponse<<"Hello world";
         pstRequest->oResponse.end();
-
         CCommMgr::getInstance().sendMessage(iTaskType,CProCenter::onMessage,pstRequest);
     }
 

@@ -381,7 +381,7 @@ void CCommMgr::onTcpRead(int iFd,void *pData)
         snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"%s,%d,errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
 
         CCommMgr::getInstance().close(iFd);
-        if (pstServerInfo->pOnClose != NULL)
+        if (pstServerInfo->pOnError != NULL)
             pstServerInfo->pOnError(CCommMgr::getInstance().m_szErrMsg);
     }
 
