@@ -313,6 +313,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CShmHashMap.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CSocketBuf.h"
 				>
 			</File>
@@ -364,6 +368,10 @@
 			</File>
 			<File
 				RelativePath=".\test\Test_shm.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\test\Test_shm2.cpp"
 				>
 			</File>
 		</Filter>
