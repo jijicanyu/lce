@@ -231,7 +231,7 @@ namespace lce
 
 		SShmHead* m_pShmHead;
 
-		tce::CShm m_oShm;
+		lce::CShm m_oShm;
 		bool m_bInit;
 	};
 
@@ -269,9 +269,9 @@ namespace lce
 	bool CShmHashMap<T>::fast_init()
 	{
 		bool bOk = false;
-		if ( m_oShm.Attach() )
+		if ( m_oShm.attach() )
 		{
-			m_pShmHead = (SShmHead*)m_oShm.GetShmBuf();
+			m_pShmHead = (SShmHead*)m_oShm.getShmBuf();
 			m_bInit = true;
 			bOk = true;
 		}
@@ -287,38 +287,38 @@ namespace lce
 			return true;
 
 		//create shm
-		if ( m_oShm.GetShmID() <= 0 || !m_oShm.Attach() )
+		if ( m_oShm.getShmID() <= 0 || !m_oShm.attach() )
 		{
-			if ( !m_oShm.Create(iShmKey, dwShmMaxSize, bCreate) )
+			if ( !m_oShm.create(iShmKey, dwShmMaxSize, bCreate) )
 			{
-				tce::xsnprintf(m_szErrMsg, sizeof(m_szErrMsg), "shm init create erro: %s", m_oShm.GetErrMsg());
+				snprintf(m_szErrMsg, sizeof(m_szErrMsg), "shm init create erro: %s", m_oShm.getErrMsg());
 				return false;
 			}
 		}
 
-		if ( m_oShm.IsCreate() )
+		if ( m_oShm.isCreate() )
 		{
-			char* pShmBuf = reinterpret_cast<char*>(m_oShm.GetShmBuf());
+			char* pShmBuf = reinterpret_cast<char*>(m_oShm.getShmBuf());
 
 			//shm head 
 			m_pShmHead = (SShmHead*)pShmBuf;
 
 			if ( dwShmMaxSize <= sizeof(SShmHead) )
 			{
-				tce::xsnprintf(m_szErrMsg, sizeof(m_szErrMsg), "shm max size<%lu> is small.", dwShmMaxSize);
+				snprintf(m_szErrMsg, sizeof(m_szErrMsg), "shm max size<%lu> is small.", dwShmMaxSize);
 				return false;
 			}
 
 			m_pShmHead->dwShmSize = dwShmMaxSize;
 
-			tce::xsnprintf(m_pShmHead->szSign, sizeof(m_pShmHead->szSign), "%s", SHM_HASH_SIGN_START);
+			snprintf(m_pShmHead->szSign, sizeof(m_pShmHead->szSign), "%s", SHM_HASH_SIGN_START);
 
 			//计算可保存的记录条数
 			size_type dwLeaveSize = dwShmMaxSize-sizeof(SShmHead);
 			m_pShmHead->dwMaxSize = dwLeaveSize/(sizeof(node_type)+sizeof(SShmHashNodeBase));
 			if ( m_pShmHead->dwMaxSize <= 0 )
 			{
-				tce::xsnprintf(m_szErrMsg, sizeof(m_szErrMsg), "shm max size<%lu> is small, only store %lu record.", dwShmMaxSize, m_pShmHead->dwMaxSize);
+				snprintf(m_szErrMsg, sizeof(m_szErrMsg), "shm max size<%lu> is small, only store %lu record.", dwShmMaxSize, m_pShmHead->dwMaxSize);
 				return false;
 			}
 			//计算hash key
@@ -372,29 +372,29 @@ namespace lce
 		{
 			//if ( strncpy(m_pstHead->szSign, BIT_HASH_SIGN, strlen(BIT_HASH_SIGN) != 0 )
 			//{
-			//	tce::xsnprintf(m_szErrMsg, sizeof(m_szErrMsg), "this shm<key=%d> is no big hash map.", iShmKey);
+			//	snprintf(m_szErrMsg, sizeof(m_szErrMsg), "this shm<key=%d> is no big hash map.", iShmKey);
 			//	return false;
 			//}
 
 			//if ( m_pstHead->dwItemCount != dwItemCount )
 			//{
-			//	tce::xsnprintf(m_szErrMsg, sizeof(m_szErrMsg), "item<shm_item_count=%lu, init_item_count=%lu> count is no equal.", m_pstHead->dwItemCount, dwItemCount);
+			//	snprintf(m_szErrMsg, sizeof(m_szErrMsg), "item<shm_item_count=%lu, init_item_count=%lu> count is no equal.", m_pstHead->dwItemCount, dwItemCount);
 			//	return false;
 			//}
 
 			//if ( m_pstHead->dwItemSize != dwItemSize )
 			//{
-			//	tce::xsnprintf(m_szErrMsg, sizeof(m_szErrMsg), "item<shm_item_size=%lu, init_item_size=%lu> size is no equal.", m_pstHead->dwItemSize, dwItemSize);
+			//	snprintf(m_szErrMsg, sizeof(m_szErrMsg), "item<shm_item_size=%lu, init_item_size=%lu> size is no equal.", m_pstHead->dwItemSize, dwItemSize);
 			//	return false;
 			//}
 
 			//if ( m_pstHead->dwShmKey != static_cast<unsigned long>(iShmKey) )
 			//{
-			//	tce::xsnprintf(m_szErrMsg, sizeof(m_szErrMsg), "shm key<shm_key=%lu, init_key=%d> is no equal.", m_pstHead->dwShmKey, iShmKey);
+			//	snprintf(m_szErrMsg, sizeof(m_szErrMsg), "shm key<shm_key=%lu, init_key=%d> is no equal.", m_pstHead->dwShmKey, iShmKey);
 			//	return false;
 			//}
 
-			m_pShmHead = (SShmHead*)m_oShm.GetShmBuf();
+			m_pShmHead = (SShmHead*)m_oShm.getShmBuf();
 		}
 
 		m_bInit = true;
@@ -408,7 +408,7 @@ namespace lce
 		if ( !m_bInit )
 			return true;
 
-		m_oShm.Detach();
+		m_oShm.detach();
 
 		m_bInit = false;
 		m_pShmHead = NULL;

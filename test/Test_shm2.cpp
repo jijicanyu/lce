@@ -11,8 +11,9 @@
 #include <queue>
 #include <set>
 #include <algorithm>
+#include <string>
 #include <fcntl.h>
-#include "../CShm.h"
+#include "../CShmHashMap.h"
 using namespace std;
 using namespace lce;
 
@@ -30,10 +31,25 @@ struct SData
 int main(int argc,char *argv[])
 {
 
-	CShm oShm;
-	oShm.create(0x1111,1024*10);
 
-	cout<<(long)oShm.getShmBuf()<<endl;
+	SData stData;
+	stData.ab=123;
+	stData.a='X';
+
+	CShmHashMap<SData> hashmapData;
+
+	hashmapData.init(0x1000,1024*1024);
+
+	/*
+	hashmapData.insert(1,stData);
+
+
+	stData.a='m';
+
+	hashmapData.insert(2,stData);
+	*/
+	cout<<hashmapData.find(1)->second.a<<endl;
+	cout<<hashmapData.find(2)->second.a<<endl;
     return 0;
 }
 

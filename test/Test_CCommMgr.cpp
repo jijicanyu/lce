@@ -52,6 +52,7 @@ public:
         CProCenter::getInstance().dispatch(100,pstRequest);
 		//CProCenter::getInstance().dispatch()
 
+
     }
 
 
