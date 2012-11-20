@@ -16,13 +16,6 @@ int CCommMgr::createSrv(int iType,const string &sIp,uint16_t wPort,uint32_t dwIn
 
     SServerInfo *pstServerInfo=new SServerInfo;
 
-    if(pstServerInfo == NULL)
-    {
-        snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,no memory for server error",__FILE__,__LINE__);
-        delete pstServerInfo;
-        return -1;
-    }
-
     pstServerInfo->sIp=sIp;
     pstServerInfo->wPort=wPort;
     pstServerInfo->iType=iType;
@@ -102,13 +95,6 @@ int CCommMgr::createAsyncConn(uint32_t dwInitRecvBufLen,uint32_t dwMaxRecvBufLen
 {
 
     SServerInfo *pstServerInfo=new SServerInfo;
-
-    if(pstServerInfo == NULL)
-    {
-        snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,no memory for server error",__FILE__,__LINE__);
-        return -1;
-    }
-
 
     pstServerInfo->sIp ="";
     pstServerInfo->wPort = 0;
@@ -196,16 +182,8 @@ void CCommMgr::onUdpRead(int iFd,void *pData)
     if ( CCommMgr::getInstance().m_vecClients[iFd] == NULL)
     {
         pstClientInfo=new SClientInfo;
-        if(pstClientInfo == NULL)
-        {
-            snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"%s,%d,no memory for client",__FILE__,__LINE__);
-            if (pstServerInfo->pProcessor != NULL)
-                pstServerInfo->pProcessor->onError(CCommMgr::getInstance().m_szErrMsg);
-            return;
-        }
         CCommMgr::getInstance().m_vecClients[iFd]=pstClientInfo;
     }
-
     else
         pstClientInfo=CCommMgr::getInstance().m_vecClients[iFd];
 
@@ -217,13 +195,6 @@ void CCommMgr::onUdpRead(int iFd,void *pData)
     if (pstClientInfo->pSocketRecvBuf == NULL)
     {
         pstClientInfo->pSocketRecvBuf=new CSocketBuf(pstServerInfo->dwInitRecvBufLen,pstServerInfo->dwMaxRecvBufLen);
-        if(pstClientInfo->pSocketRecvBuf == NULL)
-        {
-            snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"%s,%d,no memory for recv buf",__FILE__,__LINE__);
-            if (pstServerInfo->pProcessor != NULL)
-                pstServerInfo->pProcessor->onError(CCommMgr::getInstance().m_szErrMsg);
-            return;
-        }
     }
 
     int iSize = 0;
@@ -307,16 +278,6 @@ void CCommMgr::onTcpRead(int iFd,void *pData)
     if (pstClientInfo->pSocketRecvBuf == NULL)
     {
         pstClientInfo->pSocketRecvBuf=new CSocketBuf(pstServerInfo->dwInitRecvBufLen,pstServerInfo->dwMaxRecvBufLen);
-
-        if(pstClientInfo->pSocketRecvBuf == NULL)
-        {
-            CCommMgr::getInstance().close(iFd);
-
-            snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"%s,%d,no memory for recv buf",__FILE__,__LINE__);
-            if (pstServerInfo->pProcessor != NULL)
-                pstServerInfo->pProcessor->onError(CCommMgr::getInstance().m_szErrMsg);
-            return;
-        }
     }
 
     int iSize = 0;
@@ -407,15 +368,6 @@ void CCommMgr::onAccept(int iFd,void *pData)
     SServerInfo *pstServerInfo=(SServerInfo *)pData;
 
     SClientInfo *pstClientInfo=new SClientInfo;
-
-    if(pstClientInfo == NULL)
-    {
-        snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"%s,%d,no memory for client",__FILE__,__LINE__);
-        if (pstServerInfo->pProcessor != NULL)
-            pstServerInfo->pProcessor->onError(CCommMgr::getInstance().m_szErrMsg);
-        return;
-    }
-
 
     int iAddrLen = sizeof(struct sockaddr_in);
 
@@ -540,11 +492,6 @@ int CCommMgr::write(const SSession &stSession,const char* pszData, const int iSi
                 if(pstClientInfo->pSocketSendBuf == NULL)
                 {
                     pstClientInfo->pSocketSendBuf=new CSocketBuf(pstServerInfo->dwInitSendBufLen,pstServerInfo->dwMaxSendBufLen);
-                    if(pstClientInfo->pSocketSendBuf == NULL)
-                    {
-                        snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"%s,%d,no memory for send buf",__FILE__,__LINE__);
-                        return -1;
-                    }
                 }
                 pstClientInfo->pSocketSendBuf->addData(pszData+iSendSize,iSize-iSendSize);
                 m_oCEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CCommMgr::onWrite,pstClientInfo);
@@ -568,11 +515,6 @@ int CCommMgr::write(const SSession &stSession,const char* pszData, const int iSi
                 if(pstClientInfo->pSocketSendBuf == NULL)
                 {
                     pstClientInfo->pSocketSendBuf=new CSocketBuf(pstServerInfo->dwInitSendBufLen,pstServerInfo->dwMaxSendBufLen);
-                    if(pstClientInfo->pSocketSendBuf == NULL)
-                    {
-                        snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"%s,%d,no memory for send buf",__FILE__,__LINE__);
-                        return -1;
-                    }
                 }
                 pstClientInfo->pSocketSendBuf->addData(pszData,iSize);
                 m_oCEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CCommMgr::onWrite,pstClientInfo);
@@ -732,7 +674,7 @@ int CCommMgr::close(int iFd)
         {
 	
             delete m_vecClients[iFd];
-            m_vecClients[iFd]=NULL;
+            m_vecClients[iFd] = NULL;
             m_oCEvent.delFdEvent(iFd,CEvent::EV_READ|CEvent::EV_WRITE);
             return lce::close(iFd);
         }

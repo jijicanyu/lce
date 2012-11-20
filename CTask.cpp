@@ -13,14 +13,7 @@ namespace lce
         for(int i=0;i<m_iThreadNum;i++)
         {
             CTaskThread *pTaskThread=new CTaskThread;
-
-            if(pTaskThread == NULL)
-            {
-                continue;
-                snprintf(m_szErrMsg,sizeof(m_szErrMsg),"file:%s,line:%d,create thread error:%d",__FILE__,__LINE__,i);
-            }
             pTaskThread->init(this);
-
             m_vecTaskThreads.push_back(pTaskThread);
         }
         return 0;
@@ -47,11 +40,6 @@ namespace lce
     int CTask::dispatch(int iTaskType,void *pData)
     {
         STaskInfo *pstTaskInfo=new STaskInfo;
-        if(pstTaskInfo == NULL)
-        {
-            snprintf(m_szErrMsg,sizeof(m_szErrMsg),"file:%s,line:%d,no memory error:",__FILE__,__LINE__);
-            return -1;
-        }
         pstTaskInfo->iTaskType=iTaskType;
         pstTaskInfo->pData=pData;
 

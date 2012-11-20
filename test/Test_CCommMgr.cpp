@@ -188,16 +188,15 @@ int main()
         return 0;
     }
 
-    CHttpPackageFilter oCHttpPackageFilter;
 
-    iSrv1=CCommMgr::getInstance().createSrv(CCommMgr::SRV_TCP,"0.0.0.0",8001,1024*10,1024*100,1024*10,1024*100);
+    iSrv1=CCommMgr::getInstance().createSrv(CCommMgr::SRV_TCP,"0.0.0.0",8001);
 	
     if(iSrv1 < 0 )
     {
         cout<<CCommMgr::getInstance().getErrMsg()<<endl;
     }
 
-	CCommMgr::getInstance().setProcessor(iSrv1,&CProCenter::getInstance(),&oCHttpPackageFilter);
+	CCommMgr::getInstance().setProcessor(iSrv1,&CProCenter::getInstance(),CCommMgr::PKG_HTTP);
 	CCommMgr::getInstance().setMaxClients(100000);
 
     CCommMgr::getInstance().addTimer(0,2000,&CProCenter::getInstance(),NULL);

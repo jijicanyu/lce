@@ -195,7 +195,7 @@ public:
     {
         if ( m_bDeepCopy && NULL != m_pData)
         {
-            delete m_pData;
+            delete []m_pData;
         }
         m_pData = NULL;
         m_dwSize = 0;

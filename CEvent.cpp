@@ -64,13 +64,6 @@ int CEvent::init()
 
     m_stFdEvents =new SFdEvent[EPOLL_MAX_SIZE];
 
-    if(m_stFdEvents == NULL)
-    {
-        snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d CEvent::init memory limit",__FILE__,__LINE__);
-        return -1;
-    }
-
-
     m_dwTimerNum =0;
 
     for(int i=0;i<EPOLL_MAX_SIZE;i++)
@@ -260,11 +253,6 @@ int CEvent::addTimer(uint32_t dwTimerId,uint64_t ddwExpire, timeEventCb pTimeCb,
     }
 
     STimeEvent *pstTimeEvent =new STimeEvent;
-    if(pstTimeEvent == NULL)
-    {
-        snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d no momery error",__FILE__,__LINE__);
-        return -1;
-    }
 
     pstTimeEvent->ddwMillSecs=CEvent::getMillSecsNow()+ddwExpire;
     pstTimeEvent->dwTimerId=dwTimerId;
