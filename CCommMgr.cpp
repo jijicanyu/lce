@@ -98,14 +98,8 @@ int CCommMgr::createSrv(int iType,const string &sIp,uint16_t wPort,uint32_t dwIn
 
 }
 
-int CCommMgr::createAsyncConn(int iType,uint32_t dwInitRecvBufLen,uint32_t dwMaxRecvBufLen,uint32_t dwInitSendBufLen,uint32_t dwMaxSendBufLen)
+int CCommMgr::createAsyncConn(uint32_t dwInitRecvBufLen,uint32_t dwMaxRecvBufLen,uint32_t dwInitSendBufLen,uint32_t dwMaxSendBufLen)
 {
-
-    if( iType != CONN_TCP )
-    {
-        snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,server type error",__FILE__,__LINE__);
-        return -1;
-    }
 
     SServerInfo *pstServerInfo=new SServerInfo;
 
@@ -119,7 +113,7 @@ int CCommMgr::createAsyncConn(int iType,uint32_t dwInitRecvBufLen,uint32_t dwMax
     pstServerInfo->sIp ="";
     pstServerInfo->wPort = 0;
 
-    pstServerInfo->iType=iType;
+    pstServerInfo->iType = CONN_TCP;
 
 
     pstServerInfo->dwInitRecvBufLen=dwInitRecvBufLen;
@@ -138,7 +132,7 @@ int CCommMgr::createAsyncConn(int iType,uint32_t dwInitRecvBufLen,uint32_t dwMax
 
 }
 
-int CCommMgr::setProcessor(int iSrvId,CProcessor *pProcessor,CPackageFilter *pPackageFilter)
+int CCommMgr::setProcessor(int iSrvId,CProcessor *pProcessor,int iPkgType)
 {
 
     if( iSrvId <0 || iSrvId >(int) m_vecServers.size()-1 )
@@ -146,7 +140,7 @@ int CCommMgr::setProcessor(int iSrvId,CProcessor *pProcessor,CPackageFilter *pPa
         snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,iSrvId error",__FILE__,__LINE__);
         return -1;
     }
-	if(pProcessor == NULL || pPackageFilter == NULL)
+	if(pProcessor == NULL)
 	{
 		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,process pointer is null",__FILE__,__LINE__);
 		return -1;
@@ -154,7 +148,25 @@ int CCommMgr::setProcessor(int iSrvId,CProcessor *pProcessor,CPackageFilter *pPa
 
     SServerInfo * pstServerInfo=m_vecServers[iSrvId];
 	pstServerInfo->pProcessor = pProcessor;
-	pstServerInfo->pPackageFilter=pPackageFilter;
+
+	switch(iPkgType)
+	{
+	case PKG_RAW:
+		pstServerInfo->pPackageFilter = new CRawPackageFilter;
+		break;
+	case PKG_HTTP:
+		pstServerInfo->pPackageFilter = new CHttpPackageFilter;
+		break;
+	case PKG_H2ST3:
+		pstServerInfo->pPackageFilter = new CH2ShortT3PackageFilter;
+		break;
+	case PKG_H2LT3:
+		pstServerInfo->pPackageFilter = new CH2T3PackageFilter;
+		break;
+	default:
+		pstServerInfo->pPackageFilter = new CRawPackageFilter;
+
+	}
 
     return 0;
 
@@ -168,7 +180,8 @@ void CCommMgr::onWrite(int iFd,void *pData)
     {
         return;
     }
-    SClientInfo * pstClientInfo = (SClientInfo *)pData;
+
+    SClientInfo * pstClientInfo = CCommMgr::getInstance().m_vecClients[iFd];
     CCommMgr::getInstance().write(pstClientInfo->iFd);
 }
 
@@ -248,7 +261,6 @@ void CCommMgr::onUdpRead(int iFd,void *pData)
 
             stSession.dwBeginTime=lce::getTickCount();
             stSession.iFd=iFd;
-            stSession.iType=pstServerInfo->iType;
             stSession.iSvrId=pstServerInfo->iSrvId;
             stSession.stClientAddr=pstClientInfo->stClientAddr;
 
@@ -288,9 +300,9 @@ void CCommMgr::onTcpRead(int iFd,void *pData)
         return;
     }
 
-    SClientInfo *pstClientInfo=(SClientInfo*)pData;
+    SClientInfo *pstClientInfo = CCommMgr::getInstance().m_vecClients[iFd];
 
-    SServerInfo *pstServerInfo=CCommMgr::getInstance().m_vecServers[pstClientInfo->iSrvId];
+    SServerInfo *pstServerInfo = CCommMgr::getInstance().m_vecServers[pstClientInfo->iSrvId];
 
     if (pstClientInfo->pSocketRecvBuf == NULL)
     {
@@ -468,18 +480,34 @@ void CCommMgr::onConnect(int iFd,void *pData)
 
     CCommMgr::getInstance().m_oCEvent.delFdEvent(iFd,CEvent::EV_WRITE);
 
-    SClientInfo * pstClientInfo=(SClientInfo*)pData;
+	SClientInfo * pstClientInfo =CCommMgr::getInstance().m_vecClients[iFd];
     SServerInfo * pstServerInfo=CCommMgr::getInstance().m_vecServers[pstClientInfo->iSrvId];
 
+	int error;
+	socklen_t ilen = sizeof(int);
+	getsockopt(iFd, SOL_SOCKET, SO_ERROR, &error, &ilen);
+	
+	
     SSession stSession;
     stSession.dwBeginTime=lce::getTickCount();
     stSession.iFd=iFd;
     stSession.iSvrId=pstServerInfo->iSrvId;
     stSession.stClientAddr=pstClientInfo->stClientAddr;
 
-    CCommMgr::getInstance().m_oCEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_READ,CCommMgr::onTcpRead,pstClientInfo);
-    if (pstServerInfo->pProcessor != NULL)
-        pstServerInfo->pProcessor->onConnect(stSession,true);
+	if(error == 0)
+	{
+		if (pstServerInfo->pProcessor != NULL)
+			pstServerInfo->pProcessor->onConnect(stSession,true);
+
+		CCommMgr::getInstance().m_oCEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_READ,CCommMgr::onTcpRead,pstClientInfo);
+	}
+	else
+	{
+		if (pstServerInfo->pProcessor != NULL)
+			pstServerInfo->pProcessor->onConnect(stSession,false);
+		CCommMgr::getInstance().close(iFd);
+	}
+
 
 }
 
@@ -667,7 +695,7 @@ int CCommMgr::write(int iFd)
 int CCommMgr::writeTo(const int iSrvId, const string& sIp, const uint16_t wPort, const char* pszData, const int iSize)
 {
 
-    if( iSrvId <0 || iSrvId >(int) m_vecServers.size() )
+    if( iSrvId <0 || iSrvId >(int) m_vecServers.size()-1)
     {
         snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,iSrvId error",__FILE__,__LINE__);
         return -1;
@@ -722,7 +750,7 @@ inline bool CCommMgr::isClose(int iFd)
 
 int CCommMgr::connect(int iSrvId,const string &sIp,uint16_t wPort)
 {
-    if( iSrvId <0 || iSrvId >(int) m_vecServers.size() )
+    if( iSrvId <0 || iSrvId >(int) m_vecServers.size()-1)
     {
         snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,iSrvId error",__FILE__,__LINE__);
         return -1;
@@ -780,14 +808,17 @@ int CCommMgr::connect(int iSrvId,const string &sIp,uint16_t wPort)
         }
         else
         {
-            if (errno == EINPROGRESS)
+
+			if (errno == EINPROGRESS)
             {
+
                 m_oCEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_WRITE,CCommMgr::onConnect,pstClientInfo);
                 m_vecClients[pstClientInfo->iFd]=pstClientInfo;
                 return pstClientInfo->iFd;
             }
             else
             {
+
                 snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
                 delete pstClientInfo;
 				pstClientInfo = NULL;
@@ -815,7 +846,19 @@ int CCommMgr::addTimer(uint32_t dwTimerId,uint32_t dwExpire,CProcessor *pProcess
 		return -1;
 	}
 
-	SProcessor *pstProcessor = new SProcessor;
+	SProcessor *pstProcessor = NULL;
+
+	map<int,SProcessor *>::iterator it = m_mapTimeProcs.find(dwTimerId);
+
+	if(it != m_mapTimeProcs.end())
+	{
+		pstProcessor = it->second;
+	}
+	else
+	{
+		pstProcessor = new SProcessor;
+	}
+
 	pstProcessor->pData=pData;
 	pstProcessor->pProcessor=pProcessor;
 	m_mapTimeProcs[dwTimerId]=pstProcessor;
@@ -829,13 +872,16 @@ void CCommMgr::onTimer(uint32_t dwTimerId,void *pData)
 		return;
 
 	SProcessor *pstProcessor =(SProcessor*)pData;
-	pstProcessor->pProcessor->onTimer(dwTimerId,pstProcessor->pData);
 
-	if(pstProcessor != NULL)
-	{
-		delete pstProcessor;
-		pstProcessor = NULL;
-	}
+	void *pClientData = pstProcessor->pData;
+	CProcessor *pProcessor = pstProcessor->pProcessor;
+
+	delete pstProcessor;
+	pstProcessor = NULL;
+	CCommMgr::getInstance().m_mapTimeProcs.erase(dwTimerId);
+
+	pProcessor->onTimer(dwTimerId,pClientData);
+
 }
 
 int CCommMgr::delTimer(uint32_t dwTimerId)
@@ -844,12 +890,9 @@ int CCommMgr::delTimer(uint32_t dwTimerId)
 
 	if(it != m_mapTimeProcs.end())
 	{
-		if(it->second != NULL)
-		{
-			delete (it->second);
-			it->second = NULL;
-		}
-
+		delete (it->second);
+		it->second = NULL;
+		m_mapTimeProcs.erase(it);
 	}
     return m_oCEvent.delTimer(dwTimerId);
 }
@@ -940,7 +983,7 @@ CCommMgr::~CCommMgr()
 {
     m_oCEvent.stop();
 
-    for(vector <SServerInfo *>::iterator it=m_vecServers.begin();it!=m_vecServers.end();++it)
+	for(vector <SServerInfo *>::iterator it=m_vecServers.begin();it!=m_vecServers.end();++it)
     {
         lce::close((*it)->iFd);
         delete (*it);
@@ -954,6 +997,11 @@ CCommMgr::~CCommMgr()
             delete (*it);
         }
     }
+
+	for(map<int,SProcessor*>::iterator it = m_mapTimeProcs.begin();it!=m_mapTimeProcs.end();++it)
+	{
+		delete it->second;
+	}
 
 }
 

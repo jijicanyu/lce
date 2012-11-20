@@ -37,10 +37,8 @@ namespace lce
 	template<typename T>
 	struct SShmHashNode: public SShmHashNodeBase{
 		SShmHashNode(){}
-		//unsigned long dwKey;	//key
-		//T  tVal;				//数据
+
 		std::pair<const unsigned long, T > value;
-		size_t dwText;	//test 数据
 	};
 
 	//iterator
@@ -55,7 +53,6 @@ namespace lce
 		inline ~CShmHashMapIterator();
 		inline CShmHashMapIterator(const unsigned long dwValueOffset, void* pStartAddr);
 		inline _self& operator=(const _self& rhs);
-		//inline _self& operator=(SShmHashNodeBase* pValue);
 		inline _self& Assign(const unsigned long dwValueOffset, void* pStartAddr);
 		inline CShmHashMapIterator(const _self& rhs);
 		inline const _self& operator++() const;
@@ -83,7 +80,6 @@ namespace lce
 	private:
 		mutable unsigned long m_dwValueOffset;
 		mutable void* m_pStartAddr;
-		//		mutable SShmHashNodeBase* m_pValue;
 	};
 
 
@@ -124,9 +120,6 @@ namespace lce
 			size_type dwSize;				//当前使用数
 			size_type dwMaxSize;			//最大可容纳数
 			size_type dwHashKey;
-			//node_type* pData;				//
-			//node_type* pEmpty;				//empty list head
-			//SShmHashNodeBase* pHashTable;			//
 			unsigned long dwHashTableOffset;		//hash table head;
 			unsigned long dwEmptyHeadOffset;		//empty list head
 			unsigned long dwDataHeadOffset;			//data buffer 偏移量
@@ -143,7 +136,7 @@ namespace lce
 		inline ~CShmHashMap(void);
 
 		inline bool init(const int iShmKey, const size_type dwShmMaxSize /* = 512*1024*/, const bool bCreate=true);
-		//		inline bool fast_init(const int iShmKey, const size_type dwShmMaxSize /* = 512*1024*/, const bool bCreate=true);
+
 		inline bool fast_init();
 		inline bool uninit();
 		inline bool empty() const;
@@ -157,11 +150,11 @@ namespace lce
 			//			return reinterpret_cast<SShmHashNode<T>*>(m_pListHead->pListNext);	
 		}
 		inline iterator end()	{	
-			return iterator(this->GetOffset(&m_pShmHead->stListHead), m_pShmHead);
+			return iterator(this->getOffset(&m_pShmHead->stListHead), m_pShmHead);
 			//return reinterpret_cast<SShmHashNode<T>*>(m_pListHead);
 		}
 		inline const_iterator end() const {
-			return iterator(this->GetOffset(&m_pShmHead->stListHead), m_pShmHead);
+			return iterator(this->getOffset(&m_pShmHead->stListHead), m_pShmHead);
 		}
 		inline std::pair<iterator, bool> insert(const unsigned long dwKey,const T& tVal);
 		inline std::pair<iterator, bool> insert(const value_type& value);
@@ -172,26 +165,26 @@ namespace lce
 		inline void clear();
 
 		//test
-		inline void TestEmptySize();
-		inline void TestSize();
+		inline void testEmptySize();
+		inline void testSize();
 
 		size_type size() const {	return m_pShmHead->dwSize;	}
-		size_type MaxSize() const {	return m_pShmHead->dwMaxSize;	}
-		const char* GetErrMsg() const {	return m_szErrMsg;	}
-		size_type GetHashKey() const {	return m_pShmHead->dwHashKey;	}
-		void* GetStartAddr() const {	return m_pShmHead;	}
+		size_type max_size() const {	return m_pShmHead->dwMaxSize;	}
+		const char* getErrMsg() const {	return m_szErrMsg;	}
+		size_type getHashKey() const {	return m_pShmHead->dwHashKey;	}
+		void* getStartAddr() const {	return m_pShmHead;	}
 	private:
-		inline void Free(node_type* pNode);
-		inline node_type* Malloc();
-		inline size_type GetHashPos(const unsigned long dwKey)
+		inline void free(node_type* pNode);
+		inline node_type* malloc();
+		inline size_type getHashPos(const unsigned long dwKey)
 		{
 			assert(m_pShmHead != NULL);
 			return dwKey%m_pShmHead->dwHashKey;
 		}
-		inline void InsertList(node_type* pNode);
-		inline void RemoveList(node_type* pNode);
+		inline void insertList(node_type* pNode);
+		inline void removeList(node_type* pNode);
 
-		inline size_type CalcHashKey(const size_type dwMaxSize)	//计算hash key
+		inline size_type calcHashKey(const size_type dwMaxSize)	//计算hash key
 		{
 			size_type dwHashKey = dwMaxSize;
 			for ( int i=__num_primes; i>0; --i )
@@ -206,7 +199,7 @@ namespace lce
 			}
 			return dwHashKey;
 		}
-		inline char* GetAddr(const unsigned long dwOffset){
+		inline char* getAddr(const unsigned long dwOffset){
 			if ( dwOffset == 0 )
 				return NULL;
 
@@ -214,13 +207,13 @@ namespace lce
 			assert(dwOffset <= m_pShmHead->dwShmSize);
 			return (char*)m_pShmHead + dwOffset;
 		}
-		inline unsigned long GetOffset(const void* ptr){
+		inline unsigned long getOffset(const void* ptr){
 			if ( ptr == NULL )
 				return 0;
 			assert(m_pShmHead != NULL);
 			return static_cast<unsigned long>((char*)ptr - reinterpret_cast<char*>(m_pShmHead));
 		}
-		inline unsigned long GetOffset(const void* ptr) const {
+		inline unsigned long getOffset(const void* ptr) const {
 			if ( ptr == NULL )
 				return 0;
 			assert(m_pShmHead != NULL);
@@ -248,20 +241,6 @@ namespace lce
 	template<typename T>
 	CShmHashMap<T>::~CShmHashMap(void)
 	{
-		//if (NULL != m_pData)
-		//{
-		//	delete[] m_pData;
-		//}
-
-		//if (NULL != m_pHashTable)
-		//{
-		//	delete[] m_pHashTable;
-		//}
-
-		//if (NULL != m_pListHead)
-		//{
-		//	delete m_pListHead;
-		//}
 		this->uninit();
 	}
 
@@ -315,6 +294,7 @@ namespace lce
 
 			//计算可保存的记录条数
 			size_type dwLeaveSize = dwShmMaxSize-sizeof(SShmHead);
+
 			m_pShmHead->dwMaxSize = dwLeaveSize/(sizeof(node_type)+sizeof(SShmHashNodeBase));
 			if ( m_pShmHead->dwMaxSize <= 0 )
 			{
@@ -322,7 +302,7 @@ namespace lce
 				return false;
 			}
 			//计算hash key
-			m_pShmHead->dwHashKey = this->CalcHashKey(m_pShmHead->dwMaxSize);
+			m_pShmHead->dwHashKey = this->calcHashKey(m_pShmHead->dwMaxSize);
 
 			//hash table list
 			m_pShmHead->dwHashTableOffset = sizeof(SShmHead);
@@ -345,7 +325,7 @@ namespace lce
 			//把内存连到空闲列表里
 			for (size_type i=0; i<m_pShmHead->dwMaxSize; ++i)
 			{
-				(pDataHead+i)->dwText = i;
+
 				if (0 == m_pShmHead->dwEmptyHeadOffset) 
 				{
 					(pDataHead+i)->dwHashNextOffset = 0;
@@ -356,11 +336,11 @@ namespace lce
 				}
 				else
 				{
-					node_type* pEmptyHead = (node_type*)this->GetAddr(m_pShmHead->dwEmptyHeadOffset);
+					node_type* pEmptyHead = (node_type*)this->getAddr(m_pShmHead->dwEmptyHeadOffset);
 
 					(pDataHead+i)->dwListNextOffset = m_pShmHead->dwEmptyHeadOffset;//reinterpret_cast<SShmHashNodeBase*>(pEmptyHead);
 					pEmptyHead->dwListPreOffset = static_cast<unsigned long>(reinterpret_cast<char*>(pDataHead+i)-pShmBuf);
-					m_pShmHead->dwEmptyHeadOffset = this->GetOffset(pDataHead+i);
+					m_pShmHead->dwEmptyHeadOffset = this->getOffset(pDataHead+i);
 					(pDataHead+i)->dwListPreOffset = 0;
 					(pDataHead+i)->dwHashNextOffset = 0;
 					(pDataHead+i)->dwHashPreOffset = 0;
@@ -370,30 +350,6 @@ namespace lce
 		}
 		else
 		{
-			//if ( strncpy(m_pstHead->szSign, BIT_HASH_SIGN, strlen(BIT_HASH_SIGN) != 0 )
-			//{
-			//	snprintf(m_szErrMsg, sizeof(m_szErrMsg), "this shm<key=%d> is no big hash map.", iShmKey);
-			//	return false;
-			//}
-
-			//if ( m_pstHead->dwItemCount != dwItemCount )
-			//{
-			//	snprintf(m_szErrMsg, sizeof(m_szErrMsg), "item<shm_item_count=%lu, init_item_count=%lu> count is no equal.", m_pstHead->dwItemCount, dwItemCount);
-			//	return false;
-			//}
-
-			//if ( m_pstHead->dwItemSize != dwItemSize )
-			//{
-			//	snprintf(m_szErrMsg, sizeof(m_szErrMsg), "item<shm_item_size=%lu, init_item_size=%lu> size is no equal.", m_pstHead->dwItemSize, dwItemSize);
-			//	return false;
-			//}
-
-			//if ( m_pstHead->dwShmKey != static_cast<unsigned long>(iShmKey) )
-			//{
-			//	snprintf(m_szErrMsg, sizeof(m_szErrMsg), "shm key<shm_key=%lu, init_key=%d> is no equal.", m_pstHead->dwShmKey, iShmKey);
-			//	return false;
-			//}
-
 			m_pShmHead = (SShmHead*)m_oShm.getShmBuf();
 		}
 
@@ -417,42 +373,42 @@ namespace lce
 	}
 
 	template<typename T>
-	void CShmHashMap<T>::InsertList(node_type* pNode)
+	void CShmHashMap<T>::insertList(node_type* pNode)
 	{
 		pNode->dwListNextOffset = m_pShmHead->stListHead.dwListNextOffset;// m_pListHead->pListNext;
-		((node_type*)GetAddr(m_pShmHead->stListHead.dwListNextOffset))->dwListPreOffset = this->GetOffset(pNode);
-		pNode->dwListPreOffset = this->GetOffset(&m_pShmHead->stListHead);
-		m_pShmHead->stListHead.dwListNextOffset = this->GetOffset(pNode);
+		((node_type*)getAddr(m_pShmHead->stListHead.dwListNextOffset))->dwListPreOffset = this->getOffset(pNode);
+		pNode->dwListPreOffset = this->getOffset(&m_pShmHead->stListHead);
+		m_pShmHead->stListHead.dwListNextOffset = this->getOffset(pNode);
 	}
 
 	template<typename T>
-	void CShmHashMap<T>::RemoveList(node_type* pNode)
+	void CShmHashMap<T>::removeList(node_type* pNode)
 	{
-		assert( pNode->dwListNextOffset != this->GetOffset(pNode) );
-		assert( pNode->dwListPreOffset != this->GetOffset(pNode) );
-		((SShmHashNodeBase*)this->GetAddr(pNode->dwListNextOffset))->dwListPreOffset = pNode->dwListPreOffset;
-		((SShmHashNodeBase*)this->GetAddr(pNode->dwListPreOffset))->dwListNextOffset = pNode->dwListNextOffset;
+		assert( pNode->dwListNextOffset != this->getOffset(pNode) );
+		assert( pNode->dwListPreOffset != this->getOffset(pNode) );
+		((SShmHashNodeBase*)this->getAddr(pNode->dwListNextOffset))->dwListPreOffset = pNode->dwListPreOffset;
+		((SShmHashNodeBase*)this->getAddr(pNode->dwListPreOffset))->dwListNextOffset = pNode->dwListNextOffset;
 	}
 
 	template<typename T>
-	SShmHashNode<T>* CShmHashMap<T>::Malloc()
+	SShmHashNode<T>* CShmHashMap<T>::malloc()
 	{
 		node_type* pNode = NULL;
 		if ( this->empty() ) 
 		{
 
-			pNode = (node_type*)this->GetAddr(m_pShmHead->dwEmptyHeadOffset);
+			pNode = (node_type*)this->getAddr(m_pShmHead->dwEmptyHeadOffset);
 			m_pShmHead->dwEmptyHeadOffset = pNode->dwListNextOffset;
 			if (0 != m_pShmHead->dwEmptyHeadOffset) 
 			{
-				((node_type*)this->GetAddr(m_pShmHead->dwEmptyHeadOffset))->dwListPreOffset = 0;
+				((node_type*)this->getAddr(m_pShmHead->dwEmptyHeadOffset))->dwListPreOffset = 0;
 			}
 			pNode->dwListNextOffset = 0;
 			pNode->dwListPreOffset = 0;
 			++m_pShmHead->dwSize;
 
 			//加入使用列表
-			this->InsertList(pNode);
+			this->insertList(pNode);
 		}
 		else
 		{
@@ -462,22 +418,22 @@ namespace lce
 	}
 
 	template<typename T>
-	void CShmHashMap<T>::Free(node_type* pNode)
+	void CShmHashMap<T>::free(node_type* pNode)
 	{
 		assert(m_pShmHead!=NULL);
-		this->RemoveList(pNode);
+		this->removeList(pNode);
 		memset(pNode,0,sizeof(node_type));
 		if ( !this->empty() )
 		{
-			m_pShmHead->dwEmptyHeadOffset = this->GetOffset(pNode);
+			m_pShmHead->dwEmptyHeadOffset = this->getOffset(pNode);
 			pNode->dwListNextOffset = 0;
 			pNode->dwListPreOffset = 0;
 		}
 		else
 		{
-			SShmHashNodeBase* pEmptyHead = (SShmHashNodeBase*)this->GetAddr(m_pShmHead->dwEmptyHeadOffset);
+			SShmHashNodeBase* pEmptyHead = (SShmHashNodeBase*)this->getAddr(m_pShmHead->dwEmptyHeadOffset);
 			pNode->dwListNextOffset = m_pShmHead->dwEmptyHeadOffset;
-			pEmptyHead->dwListPreOffset = this->GetOffset(pNode);
+			pEmptyHead->dwListPreOffset = this->getOffset(pNode);
 			m_pShmHead->dwEmptyHeadOffset = pEmptyHead->dwListPreOffset;
 		}
 		--m_pShmHead->dwSize;
@@ -492,41 +448,41 @@ namespace lce
 	template<typename T>
 	std::pair<typename CShmHashMap<T>::iterator, bool>  CShmHashMap<T>::insert(const unsigned long dwKey,const T& tVal)
 	{
-		SShmHashNodeBase* pHashTable = (SShmHashNodeBase*)this->GetAddr(m_pShmHead->dwHashTableOffset);
+		SShmHashNodeBase* pHashTable = (SShmHashNodeBase*)this->getAddr(m_pShmHead->dwHashTableOffset);
 		pair<CShmHashMapIterator<T>, bool> rePair(end(),false);
-		size_type dwHashPos = this->GetHashPos(dwKey);
+		size_type dwHashPos = this->getHashPos(dwKey);
 
 
 		bool bHas = false;
 		SShmHashNodeBase* pHeadNode = pHashTable+dwHashPos;
-		SShmHashNodeBase* pTmpNode = (SShmHashNodeBase*)GetAddr(pHeadNode->dwHashNextOffset);
+		SShmHashNodeBase* pTmpNode = (SShmHashNodeBase*)getAddr(pHeadNode->dwHashNextOffset);
 		while (pHeadNode != pTmpNode)
 		{
 			if(reinterpret_cast<node_type*>(pTmpNode)->value.first == dwKey)
 			{
 				reinterpret_cast<node_type*>(pTmpNode)->value.second = tVal;
 				rePair.second = true;
-				rePair.first.Assign(this->GetOffset(pTmpNode), m_pShmHead);
+				rePair.first.Assign(this->getOffset(pTmpNode), m_pShmHead);
 				bHas = true;
 				break;
 			}
-			pTmpNode = (SShmHashNodeBase*)GetAddr(pTmpNode->dwHashNextOffset);
+			pTmpNode = (SShmHashNodeBase*)getAddr(pTmpNode->dwHashNextOffset);
 		}
 
 		if (!bHas)
 		{
-			SShmHashNodeBase* pNewNode = reinterpret_cast<SShmHashNodeBase*>(this->Malloc());
+			SShmHashNodeBase* pNewNode = reinterpret_cast<SShmHashNodeBase*>(this->malloc());
 			if (NULL != pNewNode)
 			{
 				*(unsigned long*)&(reinterpret_cast<node_type*>(pNewNode)->value.first) = dwKey;
 				reinterpret_cast<node_type*>(pNewNode)->value.second = tVal;		
 				rePair.second = true;
-				rePair.first.Assign(this->GetOffset(pTmpNode), m_pShmHead);
+				rePair.first.Assign(this->getOffset(pTmpNode), m_pShmHead);
 
 				pNewNode->dwHashNextOffset = pHeadNode->dwHashNextOffset;
-				((node_type*)GetAddr(pHeadNode->dwHashNextOffset))->dwHashPreOffset = this->GetOffset(pNewNode);
-				pNewNode->dwHashPreOffset = this->GetOffset(pHeadNode);
-				pHeadNode->dwHashNextOffset = this->GetOffset(pNewNode);
+				((node_type*)getAddr(pHeadNode->dwHashNextOffset))->dwHashPreOffset = this->getOffset(pNewNode);
+				pNewNode->dwHashPreOffset = this->getOffset(pHeadNode);
+				pHeadNode->dwHashNextOffset = this->getOffset(pNewNode);
 			}
 			else
 			{
@@ -540,11 +496,11 @@ namespace lce
 	template<typename T>
 	CShmHashMapIterator<T> CShmHashMap<T>::find(const unsigned long dwKey)
 	{
-		SShmHashNodeBase* pHashTable = (SShmHashNodeBase*)this->GetAddr(m_pShmHead->dwHashTableOffset);
+		SShmHashNodeBase* pHashTable = (SShmHashNodeBase*)this->getAddr(m_pShmHead->dwHashTableOffset);
 		SShmHashNodeBase* pVal = &m_pShmHead->stListHead;
-		size_type dwHashPos = this->GetHashPos(dwKey);
+		size_type dwHashPos = this->getHashPos(dwKey);
 		SShmHashNodeBase* pHeadNode = pHashTable+dwHashPos;
-		node_type* pTmpNode = (node_type*)GetAddr(pHeadNode->dwHashNextOffset);
+		node_type* pTmpNode = (node_type*)getAddr(pHeadNode->dwHashNextOffset);
 		while (pHeadNode != pTmpNode)
 		{
 			if(pTmpNode->value.first == dwKey)
@@ -552,49 +508,29 @@ namespace lce
 				pVal = pTmpNode;
 				break;
 			}
-			pTmpNode = (node_type*)GetAddr(pTmpNode->dwHashNextOffset);
+			pTmpNode = (node_type*)getAddr(pTmpNode->dwHashNextOffset);
 		}
-		return	iterator(this->GetOffset(pVal), m_pShmHead);
-
-		//		SShmHashNodeBase* pHashTable = (SShmHashNodeBase*)this->GetAddr(m_pShmHead->dwHashTableOffset);
-		//		//SShmHashNodeBase* pVal = &m_pShmHead->stListHead;
-		//		size_type dwHashPos = this->GetHashPos(dwKey);
-		//		SShmHashNodeBase* pHeadNode = pHashTable+dwHashPos;
-		//		unsigned long dwTmpNodeOffset = pHeadNode->dwHashNextOffset;
-		//		unsigned long dwHeadNodeOffset = this->GetOffset(pHeadNode);
-		//		unsigned long dwValOffset = GetOffset(&m_pShmHead->stListHead);
-		////		SShmHashNodeBase* pTmpNode = (SShmHashNodeBase*)GetAddr(pHeadNode->dwHashNextOffset);
-		//		while (dwHeadNodeOffset != dwTmpNodeOffset)
-		//		{
-		//			if(reinterpret_cast<node_type*>(GetAddr(dwTmpNodeOffset))->value.first == dwKey)
-		//			{
-		//				dwValOffset = dwTmpNodeOffset;
-		//				break;
-		//			}
-		//			dwTmpNodeOffset = ((SShmHashNodeBase*)GetAddr(dwTmpNodeOffset))->dwHashNextOffset;
-		////			pTmpNode = (SShmHashNodeBase*)GetAddr(pTmpNode->dwHashNextOffset);
-		//		}
-		//		return	iterator(dwValOffset, m_pShmHead);
+		return	iterator(this->getOffset(pVal), m_pShmHead);
 
 	}
 
 	template<typename T>
 	void CShmHashMap<T>::erase(const unsigned long dwKey)
 	{
-		SShmHashNodeBase* pHashTable = (SShmHashNodeBase*)this->GetAddr(m_pShmHead->dwHashTableOffset);
-		size_type dwHashPos = this->GetHashPos(dwKey);
+		SShmHashNodeBase* pHashTable = (SShmHashNodeBase*)this->getAddr(m_pShmHead->dwHashTableOffset);
+		size_type dwHashPos = this->getHashPos(dwKey);
 		SShmHashNodeBase* pHeadNode = pHashTable+dwHashPos;
-		SShmHashNodeBase* pTmpNode = (SShmHashNodeBase*)this->GetAddr(pHeadNode->dwHashNextOffset);
+		SShmHashNodeBase* pTmpNode = (SShmHashNodeBase*)this->getAddr(pHeadNode->dwHashNextOffset);
 		while (pHeadNode != pTmpNode)
 		{
 			if(reinterpret_cast<node_type*>(pTmpNode)->value.first == dwKey)
 			{
-				((node_type*)GetAddr(pTmpNode->dwHashNextOffset))->dwHashPreOffset = pTmpNode->dwHashPreOffset;
-				((node_type*)GetAddr(pTmpNode->dwHashPreOffset))->dwHashNextOffset = pTmpNode->dwHashNextOffset;
-				this->Free(reinterpret_cast<node_type*>(pTmpNode));
+				((node_type*)getAddr(pTmpNode->dwHashNextOffset))->dwHashPreOffset = pTmpNode->dwHashPreOffset;
+				((node_type*)getAddr(pTmpNode->dwHashPreOffset))->dwHashNextOffset = pTmpNode->dwHashNextOffset;
+				this->free(reinterpret_cast<node_type*>(pTmpNode));
 				break;
 			}
-			pTmpNode = (node_type*)GetAddr(pTmpNode->dwHashNextOffset);
+			pTmpNode = (node_type*)getAddr(pTmpNode->dwHashNextOffset);
 		}
 	}
 
@@ -604,9 +540,9 @@ namespace lce
 		if (it != this->end())
 		{
 			SShmHashNodeBase* pTmpNode = it.GetValue();
-			((node_type*)GetAddr(pTmpNode->dwHashNextOffset))->dwHashPreOffset = pTmpNode->dwHashPreOffset;
-			((node_type*)GetAddr(pTmpNode->dwHashPreOffset))->dwHashNextOffset = pTmpNode->dwHashNextOffset;
-			this->Free(reinterpret_cast<node_type*>(pTmpNode));
+			((node_type*)getAddr(pTmpNode->dwHashNextOffset))->dwHashPreOffset = pTmpNode->dwHashPreOffset;
+			((node_type*)getAddr(pTmpNode->dwHashPreOffset))->dwHashNextOffset = pTmpNode->dwHashNextOffset;
+			this->free(reinterpret_cast<node_type*>(pTmpNode));
 		}
 	}
 
@@ -614,32 +550,32 @@ namespace lce
 	void CShmHashMap<T>::clear()
 	{
 		assert(m_pShmHead != NULL);
-		SShmHashNodeBase* pHashTable = (SShmHashNodeBase*)this->GetAddr(m_pShmHead->dwHashTableOffset);
+		SShmHashNodeBase* pHashTable = (SShmHashNodeBase*)this->getAddr(m_pShmHead->dwHashTableOffset);
 		for (size_type i=0; i<m_pShmHead->dwHashKey; ++i)
 		{
-			(pHashTable+i)->dwHashNextOffset = GetOffset(pHashTable+i);
-			(pHashTable+i)->dwHashPreOffset = GetOffset(pHashTable+i);
+			(pHashTable+i)->dwHashNextOffset = getOffset(pHashTable+i);
+			(pHashTable+i)->dwHashPreOffset = getOffset(pHashTable+i);
 		}
 
 		m_pShmHead->dwSize = 0;
 		SShmHashNodeBase* pListHead = &m_pShmHead->stListHead;
-		if ( (node_type*)GetAddr(pListHead->dwListNextOffset) != pListHead)
+		if ( (node_type*)getAddr(pListHead->dwListNextOffset) != pListHead)
 		{
 
-			if ( NULL != GetAddr(m_pShmHead->dwEmptyHeadOffset) )
+			if ( NULL != getAddr(m_pShmHead->dwEmptyHeadOffset) )
 			{
-				((node_type*)GetAddr(pListHead->dwListNextOffset))->dwListPreOffset = 0;
-				((node_type*)GetAddr(pListHead->dwListPreOffset))->dwListNextOffset = m_pShmHead->dwEmptyHeadOffset;
+				((node_type*)getAddr(pListHead->dwListNextOffset))->dwListPreOffset = 0;
+				((node_type*)getAddr(pListHead->dwListPreOffset))->dwListNextOffset = m_pShmHead->dwEmptyHeadOffset;
 				m_pShmHead->dwEmptyHeadOffset = pListHead->dwListNextOffset;
 			}
 			else
 			{
 				m_pShmHead->dwEmptyHeadOffset = pListHead->dwListNextOffset;
-				((node_type*)GetAddr(pListHead->dwListNextOffset))->dwListPreOffset = 0;
-				((node_type*)GetAddr(pListHead->dwListPreOffset))->dwListNextOffset = 0;
+				((node_type*)getAddr(pListHead->dwListNextOffset))->dwListPreOffset = 0;
+				((node_type*)getAddr(pListHead->dwListPreOffset))->dwListNextOffset = 0;
 			}
 
-			pListHead->dwListNextOffset = pListHead->dwListPreOffset = this->GetOffset(pListHead);
+			pListHead->dwListNextOffset = pListHead->dwListPreOffset = this->getOffset(pListHead);
 		}
 	}
 
@@ -649,7 +585,6 @@ namespace lce
 		bool bEmpty = m_pShmHead->dwEmptyHeadOffset == 0 ? false : true;
 #ifndef NDEBUG
 		if ( bEmpty )
-			//		if (m_pListHead->pListNext == m_pListHead)
 		{
 			assert(m_pShmHead->dwSize != m_pShmHead->dwMaxSize);
 		}
@@ -681,17 +616,17 @@ namespace lce
 
 	//test
 	template<typename T>
-	void CShmHashMap<T>::TestEmptySize()
+	void CShmHashMap<T>::testEmptySize()
 	{
 #ifndef NDEBUG
 		size_type tmpSize = 0;
 
-		SShmHashNodeBase* pTmpEmptyHead = reinterpret_cast<SShmHashNodeBase*>(this->GetAddr(m_pShmHead->dwEmptyHeadOffset));
+		SShmHashNodeBase* pTmpEmptyHead = reinterpret_cast<SShmHashNodeBase*>(this->getAddr(m_pShmHead->dwEmptyHeadOffset));
 
 		while(pTmpEmptyHead)
 		{
 			tmpSize++;
-			pTmpEmptyHead = reinterpret_cast<SShmHashNodeBase*>(this->GetAddr(pTmpEmptyHead->dwListNextOffset));
+			pTmpEmptyHead = reinterpret_cast<SShmHashNodeBase*>(this->getAddr(pTmpEmptyHead->dwListNextOffset));
 		}
 
 		assert(tmpSize == m_pShmHead->dwMaxSize-m_pShmHead->dwSize);
@@ -699,17 +634,17 @@ namespace lce
 	}
 
 	template<typename T>
-	void CShmHashMap<T>::TestSize()
+	void CShmHashMap<T>::testSize()
 	{
 #ifndef NDEBUG
 		size_type tmpSize = 0;
 
 		SShmHashNodeBase* pTmpListHead = &m_pShmHead->stListHead;
-		unsigned long dwListHeadOffset = this->GetOffset(&m_pShmHead->stListHead);
+		unsigned long dwListHeadOffset = this->getOffset(&m_pShmHead->stListHead);
 		while(pTmpListHead->dwListNextOffset != dwListHeadOffset)
 		{
 			tmpSize++;
-			pTmpListHead = (SShmHashNodeBase*)this->GetAddr(pTmpListHead->dwListNextOffset);
+			pTmpListHead = (SShmHashNodeBase*)this->getAddr(pTmpListHead->dwListNextOffset);
 		}
 
 		assert(tmpSize == m_pShmHead->dwSize);
@@ -745,19 +680,9 @@ namespace lce
 		if (this != &rhs)
 		{
 			memcpy(this, &rhs, sizeof(rhs));
-			//m_dwValueOffset = rhs.m_dwValueOffset;
-			//m_pStartAddr = rhs.m_pStartAddr;
-
 		}
 		return *this;
 	}
-
-	//template<typename T>
-	//CShmHashMapIterator<T>& CShmHashMapIterator<T>::operator=(SShmHashNodeBase* pValue)
-	//{
-	//	m_pValue = pValue;
-	//	return *this;
-	//}
 
 	template<typename T>
 	CShmHashMapIterator<T>& CShmHashMapIterator<T>::Assign(const unsigned long dwValueOffset, void* pStartAddr)
@@ -771,9 +696,6 @@ namespace lce
 	CShmHashMapIterator<T>::CShmHashMapIterator(const CShmHashMapIterator<T>& rhs)
 	{
 		memcpy(this, &rhs, sizeof(rhs));
-
-		//m_dwValueOffset = rhs.m_dwValueOffset;
-		//m_pStartAddr = rhs.m_pStartAddr;
 	}
 
 	template<typename T>

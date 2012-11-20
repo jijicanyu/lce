@@ -55,14 +55,17 @@ namespace lce
         pstTaskInfo->iTaskType=iTaskType;
         pstTaskInfo->pData=pData;
 
-        if(m_queTaskQueue.size() > (size_t)m_iMaxSize )
+        pthread_mutex_lock(&m_lock);
+
+        if(m_queTaskQueue.size() > (size_t)m_iMaxSize ) //判定队列size 放在锁空间内
         {
-            snprintf(m_szErrMsg,sizeof(m_szErrMsg),"file:%s,line:%d,queue over max size :",__FILE__,__LINE__);
+            snprintf(m_szErrMsg,sizeof(m_szErrMsg),"file:%s,line:%d,queue over size :%d",__FILE__,__LINE__,(int)m_queTaskQueue.size());
             delete pstTaskInfo;
+			pthread_mutex_unlock(&m_lock);
             return -1;
         }
 
-        pthread_mutex_lock(&m_lock);
+
         m_queTaskQueue.push(pstTaskInfo);
         pthread_mutex_unlock(&m_lock);
         pthread_cond_signal(&m_cond); //唤醒睡眠线程

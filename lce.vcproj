@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="9.00"
 	Name="lce"
-	ProjectGUID="{CD249EF5-32B0-4C23-B813-B2CC63E65C7A}"
+	ProjectGUID="{5C566FD6-C129-45C3-8BB2-5A051ACC09B4}"
 	RootNamespace="lce"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
@@ -170,210 +170,18 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
-			<File
-				RelativePath=".\CAnyValue.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CCommMgr.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CConfig.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CEvent.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CFIFOBuffer.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CFileLog.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CHttpParser.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CHttpResponse.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CLog.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CTask.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CThread.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\Utils.cpp"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="头文件"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
-			<File
-				RelativePath=".\CAnyValue.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CBitMap.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CCommMgr.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CConfig.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CEvent.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CFIFOBuffer.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CFIFOBufferByHead.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CFileLog.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CH2ShortT3PackageFilter.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CHashMap.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CHttpPackageFilter.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CHttpParser.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CHttpResponse.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CLock.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CLog.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CPackage.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CPackageFilter.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CProcessor.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CRawPackageFilter.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CRegExp.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CShm.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CShmArray.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CShmHashMap.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CSocketBuf.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CTask.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CThread.h"
-				>
-			</File>
-			<File
-				RelativePath=".\lce.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Utils.h"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="资源文件"
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
-		</Filter>
-		<Filter
-			Name="test"
-			>
-			<File
-				RelativePath=".\test\Test_CAnyValue.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\test\Test_CCommMgr.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\test\Test_CEvent.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\test\Test_CTask.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\test\Test_CThread.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\test\Test_shm.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\test\Test_shm2.cpp"
-				>
-			</File>
 		</Filter>
 	</Files>
 	<Globals>

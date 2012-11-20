@@ -14,6 +14,7 @@
 #include <set>
 #include <algorithm>
 #include <fcntl.h>
+
 using namespace std;
 
 namespace lce
@@ -113,7 +114,7 @@ private:
     uint32_t m_dwTimerNum;
     char m_szErrMsg[1024];
     bool m_bRun;
-
+	int dwCount;
     pthread_mutex_t  m_lock;
 
 };

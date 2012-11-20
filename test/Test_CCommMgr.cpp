@@ -28,19 +28,23 @@ struct SRequest
 class CProCenter : public CTask ,public CProcessor
 {
 private:
-    CProCenter(){}
+    CProCenter(){ dwCount = 0;dwOutCount=0;dwOutCount2=0;}
     static CProCenter *m_pInstance;
+	int dwCount;
+	int dwOutCount;
+	int dwOutCount2;
 public:
-
+	
 
     bool onRead(SSession &stSession,const char * pszData, const int iSize)
     {
 
-		
+		dwCount++;
         SRequest *pstRequest=new SRequest;
 
         pstRequest->stSession=stSession;
         pstRequest->oParser.setData(pszData,iSize);
+		
 		/*
         pstRequest->oResponse.begin();
         pstRequest->oResponse.setStatusCode(200);
@@ -49,7 +53,11 @@ public:
         CCommMgr::getInstance().write(pstRequest->stSession,pstRequest->oResponse.data(),pstRequest->oResponse.size(),true);
         delete pstRequest;
 		*/
-        CProCenter::getInstance().dispatch(100,pstRequest);
+		
+        if(CProCenter::getInstance().dispatch(100,pstRequest)< 0)
+		{
+			cout<<CProCenter::getInstance().getErrMsg()<<endl;
+		}
 		//CProCenter::getInstance().dispatch()
 
 
@@ -66,13 +74,17 @@ public:
         pstRequest->oResponse.setStatusCode(200);
         pstRequest->oResponse<<"Hello world";
         pstRequest->oResponse.end();
-        CCommMgr::getInstance().sendMessage(iTaskType,this,pstRequest);
+        if(CCommMgr::getInstance().sendMessage(iTaskType,this,pstRequest)<0)
+		{
+			cout<<"end error"<<endl;
+		}
     }
 
 
 
     void onMessage(uint32_t dwMsgType,void *pData)
     {
+		dwOutCount++;
         SRequest *pstRequest=(SRequest*)pData;
         CCommMgr::getInstance().write(pstRequest->stSession,pstRequest->oResponse.data(),pstRequest->oResponse.size(),true);
         delete pstRequest;
@@ -83,10 +95,12 @@ public:
 	{
 		//printf("onclose id=%d\n",stSession.iFd);
 		//cout<< "onClose"<<endl;
+		dwOutCount++;
 	}
 
 	void onConnect(SSession &stSession,bool bOk)
 	{
+		dwCount++;
 		//printf("onconnect id=%d\n",stSession.iFd);
 	}
 
@@ -97,9 +111,8 @@ public:
 
 	void onTimer(uint32_t dwTimerId,void *pData)
 	{
-		//CCommMgr::getInstance().addTimer(dwTimerId,1,this,pData);
-		//CCommMgr::getInstance().delTimer(1);
-		cout<<"onTimer="<<dwTimerId<<endl;
+		CCommMgr::getInstance().addTimer(dwTimerId,2000,this,pData);
+		cout<<"dwCount="<<dwCount<<" dwOut="<<dwOutCount<<endl;
 	}
 
 	
@@ -166,7 +179,7 @@ int main()
     //CH2ShortT3PackageFilter oCPackageFilter;
     //lce::initDaemon(); //后台运行
 
-    CProCenter::getInstance().init(8,2000);
+    CProCenter::getInstance().init(8,50000);
     CProCenter::getInstance().run();
 
     if(CCommMgr::getInstance().init() < 0)
@@ -185,12 +198,9 @@ int main()
     }
 
 	CCommMgr::getInstance().setProcessor(iSrv1,&CProCenter::getInstance(),&oCHttpPackageFilter);
-
+	CCommMgr::getInstance().setMaxClients(100000);
 
     CCommMgr::getInstance().addTimer(0,2000,&CProCenter::getInstance(),NULL);
-
-    CCommMgr::getInstance().addTimer(1,5000,&CProCenter::getInstance(),NULL);
-
     CCommMgr::getInstance().addSigHandler(SIGINT,&CProCenter::getInstance());
 
     CCommMgr::getInstance().start();

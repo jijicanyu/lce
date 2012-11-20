@@ -14,6 +14,7 @@
 #include <set>
 #include <algorithm>
 #include <fcntl.h>
+
 using namespace std;
 
 namespace lce
@@ -24,7 +25,7 @@ typedef void (*msgEventCb)(uint32_t dwMsgType,void *pData);
 const int EPOLL_MAX_SIZE = 500000;
 const int EPOLL_MAX_EVENT = 1024;
 const int EPOLL_WAIT_TIMEOUT = 1000;
-const int CEVENT_MAX_TIME_EVENT =10000;
+const int CEVENT_MAX_TIME_EVENT =500000;
 
 class CEvent
 {
@@ -113,7 +114,7 @@ private:
     uint32_t m_dwTimerNum;
     char m_szErrMsg[1024];
     bool m_bRun;
-
+	int dwCount;
     pthread_mutex_t  m_lock;
 
 };
