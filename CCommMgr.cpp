@@ -794,11 +794,49 @@ int CCommMgr::addTimer(uint32_t dwTimerId,uint32_t dwExpire,CProcessor *pProcess
 		return -1;
 	}
 
-    return m_oCEvent.addTimer(dwTimerId,dwExpire,pProcessor->onTimer,pData);
+	map<int,SProcessor *>::iterator it = m_mapTimeProcs.find(dwTimerId);
+
+	SProcessor *pstProcessor = NULL;
+
+	if(it != m_mapTimeProcs.end())
+	{
+		pstProcessor = it->second;
+		pstProcessor->pData=pData;
+		pstProcessor->pProcessor=pProcessor;
+	}
+	else
+	{
+		pstProcessor = new SProcessor;
+		pstProcessor->pData=pData;
+		pstProcessor->pProcessor=pProcessor;
+		m_mapTimeProcs[dwTimerId]=pstProcessor;
+	}
+
+	return m_oCEvent.addTimer(dwTimerId,dwExpire,CCommMgr::onTimer,pstProcessor);
+}
+
+void CCommMgr::onTimer(uint32_t dwTimerId,void *pData)
+{
+	if (pData == NULL)
+		return;
+
+	SProcessor *pstProcessor =(SProcessor*)pData;
+	pstProcessor->pProcessor->onTimer(dwTimerId,pstProcessor->pData);
+
+	delete pstProcessor;
+	CCommMgr::getInstance().m_mapTimeProcs.erase(dwTimerId);
+
 }
 
 int CCommMgr::delTimer(uint32_t dwTimerId)
 {
+	map<int,SProcessor *>::iterator it = m_mapTimeProcs.find(dwTimerId);
+
+	if(it != m_mapTimeProcs.end())
+	{
+		delete (it->second);
+		m_mapTimeProcs.erase(it);
+	}
     return m_oCEvent.delTimer(dwTimerId);
 }
 
@@ -809,8 +847,19 @@ int CCommMgr::addSigHandler(int iSignal,CProcessor *pProcessor)
 		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,"processor pointor is null");
 		return -1;
 	}
-    signal(iSignal,pProcessor->onSignal);
+	m_mapSigProcs[iSignal]=pProcessor;
+
+	signal(iSignal,CCommMgr::onSignal);
     return 0;
+}
+
+void CCommMgr::onSignal(int iSignal)
+{
+	map<int,CProcessor *>::iterator it = CCommMgr::getInstance().m_mapSigProcs.find(iSignal);
+	if(it != CCommMgr::getInstance().m_mapSigProcs.end())
+	{
+		it->second->onSignal(iSignal);
+	}
 }
 
 int CCommMgr::sendMessage(uint32_t dwMsgType,CProcessor *pProcessor,void* pData)
@@ -820,9 +869,24 @@ int CCommMgr::sendMessage(uint32_t dwMsgType,CProcessor *pProcessor,void* pData)
 		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,"processor pointor is null");
 		return -1;
 	}
-    return m_oCEvent.addMessage(dwMsgType,pProcessor->onMessage,pData);
-}
 
+	SProcessor *pstProcessor = new SProcessor;
+	pstProcessor->pData=pData;
+	pstProcessor->pProcessor=pProcessor;
+
+	return m_oCEvent.addMessage(dwMsgType,CCommMgr::onMessage,pstProcessor);
+
+}
+void CCommMgr::onMessage(uint32_t dwMsgType,void *pData)
+{
+	if (pData == NULL)
+		return;
+	SProcessor *pstProcessor =(SProcessor*)pData;
+	pstProcessor->pProcessor->onMessage(dwMsgType,pstProcessor->pData);
+
+	delete pstProcessor;
+
+}
 
 int CCommMgr::start()
 {

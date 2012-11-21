@@ -90,6 +90,11 @@ private:
             if (pSocketSendBuf != NULL) { delete pSocketSendBuf;pSocketSendBuf = NULL; }
         }
     };
+	struct SProcessor
+	{
+		CProcessor *pProcessor;
+		void * pData;
+	};
 
 public:
     int init()
@@ -141,7 +146,8 @@ public:
 
     static void onAccept(int iFd,void *pData);
     static void onTimer(uint32_t dwTimerId,void *pData);
-
+	static void onMessage(uint32_t dwMsgType,void *pData);
+	static void onSignal(int iSignal);
 
     static CCommMgr & getInstance()
     {
@@ -160,6 +166,8 @@ private:
 private:
     vector <SServerInfo *> m_vecServers;
     vector <SClientInfo *> m_vecClients;
+	map<int,SProcessor *> m_mapTimeProcs;
+	map<int,CProcessor*> m_mapSigProcs;
     CEvent m_oCEvent;
     char m_szErrMsg[1024];
     static CCommMgr *m_pInstance;

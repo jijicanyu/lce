@@ -30,6 +30,7 @@ int main(int argc,char *argv[])
 	size_t iPos = 0;
 	oValue.decode(iPos,sData2.data(),sData2.size());
 	oValue.encodeJSON(sData);
+	oValue.encodeXMLWithHead(sData);
     cout<< sData<<endl;
 
     return 0;

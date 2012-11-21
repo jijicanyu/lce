@@ -358,23 +358,25 @@ int CEvent::run()
                 if (m_stEPollState.stEvents[i].data.fd == m_iMsgFd[0]) //自定义事件
                 {
                     char szBuf[1];
-                    read(m_iMsgFd[0],szBuf,1);
-                    SMsgEvent *pstMsgEvent = NULL;
+                    
+					while(read(m_iMsgFd[0],szBuf,1)> 0)
+					{
+						SMsgEvent *pstMsgEvent = NULL;
+						::pthread_mutex_lock(&m_lock);
+						if (!m_queMsgEvents.empty())
+						{
+							pstMsgEvent = m_queMsgEvents.front();
+							m_queMsgEvents.pop();
+						}
+						::pthread_mutex_unlock(&m_lock);
 
-                    ::pthread_mutex_lock(&m_lock);
-                    if (!m_queMsgEvents.empty())
-                    {
-                        pstMsgEvent = m_queMsgEvents.front();
-                        m_queMsgEvents.pop();
-                    }
-                    ::pthread_mutex_unlock(&m_lock);
-
-                    if(pstMsgEvent != NULL)
-                    {
-                        if (pstMsgEvent->pMsgProc)
-                            pstMsgEvent->pMsgProc(pstMsgEvent->dwMsgType,pstMsgEvent->pClientData);
-                        delete pstMsgEvent;
-                    }
+						if(pstMsgEvent != NULL)
+						{
+							if (pstMsgEvent->pMsgProc)
+								pstMsgEvent->pMsgProc(pstMsgEvent->dwMsgType,pstMsgEvent->pClientData);
+							delete pstMsgEvent;
+						}
+					}
 
                 }
                 else

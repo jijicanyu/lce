@@ -36,18 +36,20 @@ public:
     bool onRead(SSession &stSession,const char * pszData, const int iSize)
     {
 
-
+		
         SRequest *pstRequest=new SRequest;
 
         pstRequest->stSession=stSession;
         pstRequest->oParser.setData(pszData,iSize);
+		/*
         pstRequest->oResponse.begin();
         pstRequest->oResponse.setStatusCode(200);
         pstRequest->oResponse<<"Hello world";
         pstRequest->oResponse.end();
         CCommMgr::getInstance().write(pstRequest->stSession,pstRequest->oResponse.data(),pstRequest->oResponse.size(),true);
         delete pstRequest;
-        //CProCenter::getInstance().dispatch(100,pstRequest);
+		*/
+        CProCenter::getInstance().dispatch(100,pstRequest);
 		//CProCenter::getInstance().dispatch()
 
     }
@@ -56,6 +58,7 @@ public:
     void onWork(int iTaskType,void *pData)
     {
 
+		//cout<<"type="<<iTaskType<<endl;
         SRequest *pstRequest=(SRequest*)pData;
 
         pstRequest->oResponse.begin();
@@ -83,7 +86,7 @@ public:
 
 	void onConnect(SSession &stSession,bool bOk)
 	{
-		printf("onconnect id=%d\n",stSession.iFd);
+		//printf("onconnect id=%d\n",stSession.iFd);
 	}
 
 	void onError(char * szErrMsg)
@@ -96,6 +99,7 @@ public:
 		cout<<"onTimer="<<dwTimerId<<endl;
 	}
 
+	
 	void onSignal(int iSignal)
 	{
 		switch(iSignal)
@@ -115,9 +119,7 @@ public:
 			break;
 		}
 	}
-
-
-
+	
     static CProCenter &getInstance()
     {
         if (NULL == m_pInstance)
