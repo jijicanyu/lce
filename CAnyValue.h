@@ -825,7 +825,7 @@ public:
         }
         else if(szBuf[dwPos] == 't')
         {
-            if (dwPos+4 > iSize)
+            if (dwPos+4 > (int)iSize)
             {
                 throw runtime_error("not a bool value");
             }
@@ -841,7 +841,7 @@ public:
         }
         else if(szBuf[dwPos] == 'n')
         {
-            if (dwPos+4 > iSize)
+            if (dwPos+4 > (int)iSize)
             {
                 throw runtime_error("not a null value");
             }
@@ -854,7 +854,7 @@ public:
         }
         else if(szBuf[dwPos] == 'f')
         {
-            if (dwPos+5 > iSize)
+            if (dwPos+5 > (int)iSize)
             {
                 throw runtime_error("not a bool value");
             }
@@ -1326,8 +1326,8 @@ private:
             {
                 string sOut;
                 sOut.append(szBuf+dwPos,min(100,iSize-dwPos));
-                cout<<sOut<<endl;
-                throw runtime_error( "Bad unicode escape sequence in string: hexadecimal digit expected.");
+				sOut+="Bad unicode escape sequence in string: hexadecimal digit expected. in "+sOut;
+                throw runtime_error(sOut.c_str());
             }
 
 
@@ -1421,8 +1421,8 @@ private:
         {
             string sOut;
             sOut.append(szBuf+dwPos,min(100,iSize-dwPos));
-            cout<<sOut<<endl;
-            throw runtime_error("read string error");
+			sOut+="read string error. in "+sOut;
+			throw runtime_error(sOut.c_str());
         }
     }
 
@@ -1558,8 +1558,8 @@ private:
             {
                 string sOut;
                 sOut.append(szBuf+dwPos,min(100,iSize-dwPos));
-                cout<<sOut<<endl;
-                throw runtime_error("expect ','");
+				sOut="expect ',' in "+sOut;
+                throw runtime_error(sOut.c_str());
             }
         }
 
@@ -1590,8 +1590,8 @@ private:
                 {
                     string sOut;
                     sOut.append(szBuf+dwPos,min(100,iSize-dwPos));
-                    cout<<sOut<<endl;
-                    throw runtime_error("expect ':'");
+					sOut+="expect ':'. in "+sOut;
+					throw runtime_error(sOut.c_str());
                 }
 
 
@@ -1634,8 +1634,8 @@ private:
                     {
                         string sOut;
                         sOut.append(szBuf+dwPos,min(100,iSize-dwPos));
-                        cout<<sOut<<endl;
-                        throw runtime_error("not a bool value");
+						sOut="not a bool value in "+sOut;
+						throw runtime_error(sOut.c_str());
                     }
 
                     oValue[sKey]=true;
@@ -1701,8 +1701,8 @@ private:
                 {
                     string sOut;
                     sOut.append(szBuf+dwPos,min(100,iSize-dwPos));
-                    cout<<sOut<<endl;
-                    throw runtime_error("expect ','");
+					sOut="expect ',' in "+sOut;
+					throw runtime_error(sOut.c_str());
                 }
 
             }
@@ -1710,8 +1710,8 @@ private:
             {
                 string sOut;
                 sOut.append(szBuf+dwPos,min(100,iSize-dwPos));
-                cout<<sOut<<endl;
-                throw runtime_error("expect '\"'");
+				sOut="expect '\"' in "+sOut;
+				throw runtime_error(sOut.c_str());
             }
         }
 

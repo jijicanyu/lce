@@ -104,6 +104,8 @@ public:
             snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
             return -1;
         }
+		m_dwMaxClient = 5000;
+		m_dwClientNum = 0;
         m_vecClients.resize(EPOLL_MAX_SIZE,0);
         return 0;
     }
@@ -112,6 +114,7 @@ public:
     int createAsyncConn(int iType,uint32_t dwInitRecvBufLen,uint32_t dwMaxRecvBufLen,uint32_t dwInitSendBufLen,uint32_t dwMaxSendBufLen);
     int setProcessor(int iSrvId,CProcessor * pProcessor,CPackageFilter * pPackageFilter);
 
+	void setMaxClients(uint32_t dwMaxClient){ m_dwMaxClient = dwMaxClient ;}
 
 
     int close(const SSession &stSession);
@@ -171,6 +174,8 @@ private:
     CEvent m_oCEvent;
     char m_szErrMsg[1024];
     static CCommMgr *m_pInstance;
+	uint32_t m_dwMaxClient;
+	uint32_t m_dwClientNum;
 };
 };
 

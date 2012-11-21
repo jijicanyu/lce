@@ -96,6 +96,8 @@ public:
 
 	void onTimer(uint32_t dwTimerId,void *pData)
 	{
+		//CCommMgr::getInstance().addTimer(dwTimerId,1,this,pData);
+		//CCommMgr::getInstance().delTimer(1);
 		cout<<"onTimer="<<dwTimerId<<endl;
 	}
 
@@ -189,7 +191,7 @@ int main()
 
     CCommMgr::getInstance().addTimer(0,2000,&CProCenter::getInstance(),NULL);
 
-    CCommMgr::getInstance().addTimer(1,2000,&CProCenter::getInstance(),NULL);
+    CCommMgr::getInstance().addTimer(1,5000,&CProCenter::getInstance(),NULL);
 
     CCommMgr::getInstance().addSigHandler(SIGINT,&CProCenter::getInstance());
 

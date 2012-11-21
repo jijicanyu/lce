@@ -1,5 +1,5 @@
-#ifndef __NCE_CH2SHORTT3_H
-#define __NCE_CH2SHORTT3_H
+#ifndef __NCE_CH2T3_H
+#define __NCE_CH2T3_H
 
 namespace lce
 {
