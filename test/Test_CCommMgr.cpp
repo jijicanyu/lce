@@ -163,7 +163,7 @@ private:
 int main()
 {
     //CH2ShortT3PackageFilter oCPackageFilter;
-    //nce::initDaemon(); //后台运行
+    //lce::initDaemon(); //后台运行
 
     CProCenter::getInstance().init(8,2000);
     CProCenter::getInstance().run();
@@ -174,9 +174,6 @@ int main()
         return 0;
     }
 
-
-    CH2ShortT3PackageFilter oCH2T3PackageFilter;
-    CRawPackageFilter oCPackageFilter;
     CHttpPackageFilter oCHttpPackageFilter;
 
     iSrv1=CCommMgr::getInstance().createSrv(CCommMgr::SRV_TCP,"0.0.0.0",8001,1024*10,1024*100,1024*10,1024*100);
