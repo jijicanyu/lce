@@ -37,8 +37,7 @@ namespace lce
 	template<typename T>
 	struct SShmHashNode: public SShmHashNodeBase{
 		SShmHashNode(){}
-		//unsigned long dwKey;	//key
-		//T  tVal;				//数据
+
 		std::pair<const unsigned long, T > value;
 		size_t dwText;	//test 数据
 	};

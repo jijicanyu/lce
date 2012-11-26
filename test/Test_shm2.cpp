@@ -10,10 +10,11 @@
 #include <string.h>
 #include <queue>
 #include <set>
+#include <list>
 #include <algorithm>
 #include <string>
 #include <fcntl.h>
-#include "../CShmHashMap.h"
+#include "../CShmList.h"
 using namespace std;
 using namespace lce;
 
@@ -28,6 +29,7 @@ struct SData
 
 #pragma pack()
 
+
 int main(int argc,char *argv[])
 {
 
@@ -36,20 +38,27 @@ int main(int argc,char *argv[])
 	stData.ab=123;
 	stData.a='X';
 
-	CShmHashMap<SData> hashmapData;
-
-	hashmapData.init(0x1000,1024*1024);
-
-	/*
-	hashmapData.insert(1,stData);
+	CShmList<int> liData;
+	liData.init(0x1111,4096,true);
+	cout<<"maxsize ="<<liData.maxSize()<<endl;
 
 
-	stData.a='m';
+	for(int i=0;i<80;i++)
+	{
+		if (!liData.push_back(i))
+		{
+			cout<<liData.getErrMsg()<<endl;
+		}
+		cout<<"size="<<liData.size()<<endl;
+	}
 
-	hashmapData.insert(2,stData);
-	*/
-	cout<<hashmapData.find(1)->second.a<<endl;
-	cout<<hashmapData.find(2)->second.a<<endl;
+	int sizet = liData.size();
+	for(int j=0;j<sizet;j++)
+	{
+		cout<<liData.front()<<endl;
+		liData.pop_front();
+	}
+
     return 0;
 }
 

@@ -49,19 +49,6 @@
 #endif
 
 
-#define NCE_IS_GBK_CHAR(c1, c2) \
-	((unsigned char)c1 >= 0x81 \
-	&& (unsigned char)c1 <= 0xfe \
-	&& (unsigned char)c2 >= 0x40 \
-	&& (unsigned char)c2 <= 0xfe \
-	&& (unsigned char)c2 != 0x7f)
-
-#define NCE_UTF8_LENGTH(c) \
-	((unsigned char)c <= 0x7f ? 1 : \
-	((unsigned char)c & 0xe0) == 0xc0 ? 2: \
-	((unsigned char)c & 0xf0) == 0xe0 ? 3: \
-	((unsigned char)c & 0xf8) == 0xf0 ? 4: 0)
-
 namespace lce
 {
 
@@ -134,8 +121,6 @@ namespace lce
 		digit += (second >= 'A' ? ((second & 0xDF) - 'A') + 10 : (second - '0'));
 		return static_cast<char>(digit);
 	}
-
-    std::string textEncodeJSON(const std::string& sSrc, const bool bUtf8);
 
 };
 #endif

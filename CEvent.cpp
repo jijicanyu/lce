@@ -219,17 +219,10 @@ int CEvent::delTimer(uint32_t dwTimerId)
         return 0;
     }
 
-    STimeEvent *pstTimeEvent =new STimeEvent;
+    STimeEvent stTimeEvent;
+    stTimeEvent.ddwMillSecs=m_szTimeEventIndexs[dwTimerId];
 
-    if(pstTimeEvent == NULL)
-    {
-        snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d no momery error",__FILE__,__LINE__);
-        return -1;
-    }
-
-    pstTimeEvent->ddwMillSecs=m_szTimeEventIndexs[dwTimerId];
-
-    multiset<STimeEvent *>::iterator find = m_setSTimeEvents.find(pstTimeEvent);
+    multiset<STimeEvent *>::iterator find = m_setSTimeEvents.find(&stTimeEvent);
 
     for(;find!=m_setSTimeEvents.end();++find)
     {
@@ -241,7 +234,6 @@ int CEvent::delTimer(uint32_t dwTimerId)
             break;
         }
     }
-    delete pstTimeEvent;
     m_szTimeEventIndexs[dwTimerId] = 0;
 
     return 0;
@@ -271,7 +263,6 @@ int CEvent::addTimer(uint32_t dwTimerId,uint64_t ddwExpire, timeEventCb pTimeCb,
     if(pstTimeEvent == NULL)
     {
         snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d no momery error",__FILE__,__LINE__);
-        delete pstTimeEvent;
         return -1;
     }
     pstTimeEvent->ddwMillSecs=CEvent::getMillSecsNow()+ddwExpire;

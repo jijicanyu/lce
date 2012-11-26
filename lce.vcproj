@@ -261,6 +261,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CH2T3PackageFilter.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CHashMap.h"
 				>
 			</File>
@@ -310,6 +314,14 @@
 			</File>
 			<File
 				RelativePath=".\CShmArray.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CShmHashMap.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CShmList.h"
 				>
 			</File>
 			<File
@@ -364,6 +376,10 @@
 			</File>
 			<File
 				RelativePath=".\test\Test_shm.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\test\Test_shm2.cpp"
 				>
 			</File>
 		</Filter>
