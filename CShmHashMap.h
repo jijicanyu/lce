@@ -39,7 +39,6 @@ namespace lce
 		SShmHashNode(){}
 
 		std::pair<const unsigned long, T > value;
-		size_t dwText;	//test 数据
 	};
 
 	//iterator
@@ -54,7 +53,6 @@ namespace lce
 		inline ~CShmHashMapIterator();
 		inline CShmHashMapIterator(const unsigned long dwValueOffset, void* pStartAddr);
 		inline _self& operator=(const _self& rhs);
-		//inline _self& operator=(SShmHashNodeBase* pValue);
 		inline _self& Assign(const unsigned long dwValueOffset, void* pStartAddr);
 		inline CShmHashMapIterator(const _self& rhs);
 		inline const _self& operator++() const;
@@ -82,7 +80,6 @@ namespace lce
 	private:
 		mutable unsigned long m_dwValueOffset;
 		mutable void* m_pStartAddr;
-		//		mutable SShmHashNodeBase* m_pValue;
 	};
 
 
@@ -123,9 +120,6 @@ namespace lce
 			size_type dwSize;				//当前使用数
 			size_type dwMaxSize;			//最大可容纳数
 			size_type dwHashKey;
-			//node_type* pData;				//
-			//node_type* pEmpty;				//empty list head
-			//SShmHashNodeBase* pHashTable;			//
 			unsigned long dwHashTableOffset;		//hash table head;
 			unsigned long dwEmptyHeadOffset;		//empty list head
 			unsigned long dwDataHeadOffset;			//data buffer 偏移量
@@ -142,7 +136,7 @@ namespace lce
 		inline ~CShmHashMap(void);
 
 		inline bool init(const int iShmKey, const size_type dwShmMaxSize /* = 512*1024*/, const bool bCreate=true);
-		//		inline bool fast_init(const int iShmKey, const size_type dwShmMaxSize /* = 512*1024*/, const bool bCreate=true);
+
 		inline bool fast_init();
 		inline bool uninit();
 		inline bool empty() const;
@@ -247,20 +241,6 @@ namespace lce
 	template<typename T>
 	CShmHashMap<T>::~CShmHashMap(void)
 	{
-		//if (NULL != m_pData)
-		//{
-		//	delete[] m_pData;
-		//}
-
-		//if (NULL != m_pHashTable)
-		//{
-		//	delete[] m_pHashTable;
-		//}
-
-		//if (NULL != m_pListHead)
-		//{
-		//	delete m_pListHead;
-		//}
 		this->uninit();
 	}
 
@@ -314,6 +294,7 @@ namespace lce
 
 			//计算可保存的记录条数
 			size_type dwLeaveSize = dwShmMaxSize-sizeof(SShmHead);
+
 			m_pShmHead->dwMaxSize = dwLeaveSize/(sizeof(node_type)+sizeof(SShmHashNodeBase));
 			if ( m_pShmHead->dwMaxSize <= 0 )
 			{
@@ -344,7 +325,7 @@ namespace lce
 			//把内存连到空闲列表里
 			for (size_type i=0; i<m_pShmHead->dwMaxSize; ++i)
 			{
-				(pDataHead+i)->dwText = i;
+
 				if (0 == m_pShmHead->dwEmptyHeadOffset) 
 				{
 					(pDataHead+i)->dwHashNextOffset = 0;
@@ -369,30 +350,6 @@ namespace lce
 		}
 		else
 		{
-			//if ( strncpy(m_pstHead->szSign, BIT_HASH_SIGN, strlen(BIT_HASH_SIGN) != 0 )
-			//{
-			//	snprintf(m_szErrMsg, sizeof(m_szErrMsg), "this shm<key=%d> is no big hash map.", iShmKey);
-			//	return false;
-			//}
-
-			//if ( m_pstHead->dwItemCount != dwItemCount )
-			//{
-			//	snprintf(m_szErrMsg, sizeof(m_szErrMsg), "item<shm_item_count=%lu, init_item_count=%lu> count is no equal.", m_pstHead->dwItemCount, dwItemCount);
-			//	return false;
-			//}
-
-			//if ( m_pstHead->dwItemSize != dwItemSize )
-			//{
-			//	snprintf(m_szErrMsg, sizeof(m_szErrMsg), "item<shm_item_size=%lu, init_item_size=%lu> size is no equal.", m_pstHead->dwItemSize, dwItemSize);
-			//	return false;
-			//}
-
-			//if ( m_pstHead->dwShmKey != static_cast<unsigned long>(iShmKey) )
-			//{
-			//	snprintf(m_szErrMsg, sizeof(m_szErrMsg), "shm key<shm_key=%lu, init_key=%d> is no equal.", m_pstHead->dwShmKey, iShmKey);
-			//	return false;
-			//}
-
 			m_pShmHead = (SShmHead*)m_oShm.getShmBuf();
 		}
 
