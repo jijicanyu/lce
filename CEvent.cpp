@@ -265,6 +265,7 @@ int CEvent::addTimer(uint32_t dwTimerId,uint64_t ddwExpire, timeEventCb pTimeCb,
         snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d no momery error",__FILE__,__LINE__);
         return -1;
     }
+
     pstTimeEvent->ddwMillSecs=CEvent::getMillSecsNow()+ddwExpire;
     pstTimeEvent->dwTimerId=dwTimerId;
     pstTimeEvent->pClientData=pClientData;
@@ -285,15 +286,19 @@ int CEvent::addMessage(uint32_t dwMsgType,msgEventCb pMsgCb,void * pClientData)
     pstMsgEvent->pClientData=pClientData;
 
     ::pthread_mutex_lock(&m_lock);
-    m_queMsgEvents.push(pstMsgEvent);
+
+	m_queMsgEvents.push(pstMsgEvent);
+	int iFlag =write(m_iMsgFd[1],"1",1);
+
     ::pthread_mutex_unlock(&m_lock);
 
-    if(write(m_iMsgFd[1],"1",1) < 0)
+    if(iFlag < 0)
     {
         snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d CEvent::addMessage write error",__FILE__,__LINE__);
         delete pstMsgEvent;
         return -1;
     }
+
 
     return 0;
 }
@@ -312,29 +317,36 @@ int CEvent::run()
         {
             uint64_t ddwTimeNow = CEvent::getMillSecsNow();
 
-            for(multiset<STimeEvent*>::iterator it=m_setSTimeEvents.begin();it!=m_setSTimeEvents.end();)
-            {
-                if ((*it)->ddwMillSecs<= ddwTimeNow)
-                {
-                    STimeEvent * pstTimeEvent=(*it);
-                    m_szTimeEventIndexs[(*it)->dwTimerId] = 0;
-                    m_setSTimeEvents.erase(it++);
+			while(true)
+			{
+				multiset<STimeEvent*>::iterator it=m_setSTimeEvents.begin();
 
-                    if( pstTimeEvent->pTimeProc )
-                        pstTimeEvent->pTimeProc(pstTimeEvent->dwTimerId,pstTimeEvent->pClientData);
-                    delete pstTimeEvent;
+				if(it == m_setSTimeEvents.end()) break;
 
+				if ((*it)->ddwMillSecs<= ddwTimeNow)
+				{
+					STimeEvent * pstTimeEvent=(*it);
+					m_szTimeEventIndexs[(*it)->dwTimerId] = 0;
+					m_setSTimeEvents.erase(it);
 
-                }
-                else
-                {
-                    multiset<STimeEvent*>::iterator it=m_setSTimeEvents.begin();
-                    if(it!=m_setSTimeEvents.end() && ((*it)->ddwMillSecs-ddwTimeNow) > 0 )
-                        ddwExpire=(*it)->ddwMillSecs-ddwTimeNow;
-                    break;
-                }
+					void *pClientData = pstTimeEvent->pClientData;
+					uint32_t dwTimerId = pstTimeEvent->dwTimerId;
+					timeEventCb  pTimeProc = pstTimeEvent->pTimeProc;
 
-            }
+					delete pstTimeEvent;
+					pstTimeEvent = NULL;
+
+					if( pTimeProc )	pTimeProc(dwTimerId,pClientData);
+				}
+				else
+				{
+					if(it!=m_setSTimeEvents.end() && ((*it)->ddwMillSecs-ddwTimeNow) > 0 )
+						ddwExpire=(*it)->ddwMillSecs-ddwTimeNow;
+					break;
+				}
+
+			}
+
         }
 
         int iEventNum=epoll_wait(m_stEPollState.iEPollFd,m_stEPollState.stEvents,EPOLL_MAX_EVENT,ddwExpire);
@@ -350,11 +362,15 @@ int CEvent::run()
                 {
                     char szBuf[1];
                     
-					while(read(m_iMsgFd[0],szBuf,1)> 0)
+					while(true)
 					{
 						SMsgEvent *pstMsgEvent = NULL;
+
 						::pthread_mutex_lock(&m_lock);
-						if (!m_queMsgEvents.empty())
+
+						int iFlag =read(m_iMsgFd[0],szBuf,1);
+
+						if (!m_queMsgEvents.empty() && iFlag > 0)
 						{
 							pstMsgEvent = m_queMsgEvents.front();
 							m_queMsgEvents.pop();
@@ -366,6 +382,10 @@ int CEvent::run()
 							if (pstMsgEvent->pMsgProc)
 								pstMsgEvent->pMsgProc(pstMsgEvent->dwMsgType,pstMsgEvent->pClientData);
 							delete pstMsgEvent;
+						}
+						else
+						{
+							break;
 						}
 					}
 

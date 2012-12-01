@@ -168,7 +168,8 @@ void CCommMgr::onWrite(int iFd,void *pData)
     {
         return;
     }
-    SClientInfo * pstClientInfo = (SClientInfo *)pData;
+
+    SClientInfo * pstClientInfo = CCommMgr::getInstance().m_vecClients[iFd];
     CCommMgr::getInstance().write(pstClientInfo->iFd);
 }
 
@@ -288,9 +289,9 @@ void CCommMgr::onTcpRead(int iFd,void *pData)
         return;
     }
 
-    SClientInfo *pstClientInfo=(SClientInfo*)pData;
+    SClientInfo *pstClientInfo = CCommMgr::getInstance().m_vecClients[iFd];
 
-    SServerInfo *pstServerInfo=CCommMgr::getInstance().m_vecServers[pstClientInfo->iSrvId];
+    SServerInfo *pstServerInfo = CCommMgr::getInstance().m_vecServers[pstClientInfo->iSrvId];
 
     if (pstClientInfo->pSocketRecvBuf == NULL)
     {
@@ -468,7 +469,7 @@ void CCommMgr::onConnect(int iFd,void *pData)
 
     CCommMgr::getInstance().m_oCEvent.delFdEvent(iFd,CEvent::EV_WRITE);
 
-    SClientInfo * pstClientInfo=(SClientInfo*)pData;
+	SClientInfo * pstClientInfo =CCommMgr::getInstance().m_vecClients[iFd];
     SServerInfo * pstServerInfo=CCommMgr::getInstance().m_vecServers[pstClientInfo->iSrvId];
 
     SSession stSession;
@@ -667,7 +668,7 @@ int CCommMgr::write(int iFd)
 int CCommMgr::writeTo(const int iSrvId, const string& sIp, const uint16_t wPort, const char* pszData, const int iSize)
 {
 
-    if( iSrvId <0 || iSrvId >(int) m_vecServers.size() )
+    if( iSrvId <0 || iSrvId >(int) m_vecServers.size()-1)
     {
         snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,iSrvId error",__FILE__,__LINE__);
         return -1;
@@ -722,7 +723,7 @@ inline bool CCommMgr::isClose(int iFd)
 
 int CCommMgr::connect(int iSrvId,const string &sIp,uint16_t wPort)
 {
-    if( iSrvId <0 || iSrvId >(int) m_vecServers.size() )
+    if( iSrvId <0 || iSrvId >(int) m_vecServers.size()-1)
     {
         snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,iSrvId error",__FILE__,__LINE__);
         return -1;
@@ -815,7 +816,19 @@ int CCommMgr::addTimer(uint32_t dwTimerId,uint32_t dwExpire,CProcessor *pProcess
 		return -1;
 	}
 
-	SProcessor *pstProcessor = new SProcessor;
+	SProcessor *pstProcessor = NULL;
+
+	map<int,SProcessor *>::iterator it = m_mapTimeProcs.find(dwTimerId);
+
+	if(it != m_mapTimeProcs.end())
+	{
+		pstProcessor = it->second;
+	}
+	else
+	{
+		pstProcessor = new SProcessor;
+	}
+
 	pstProcessor->pData=pData;
 	pstProcessor->pProcessor=pProcessor;
 	m_mapTimeProcs[dwTimerId]=pstProcessor;
@@ -829,13 +842,16 @@ void CCommMgr::onTimer(uint32_t dwTimerId,void *pData)
 		return;
 
 	SProcessor *pstProcessor =(SProcessor*)pData;
-	pstProcessor->pProcessor->onTimer(dwTimerId,pstProcessor->pData);
 
-	if(pstProcessor != NULL)
-	{
-		delete pstProcessor;
-		pstProcessor = NULL;
-	}
+	void *pClientData = pstProcessor->pData;
+	CProcessor *pProcessor = pstProcessor->pProcessor;
+
+	delete pstProcessor;
+	pstProcessor = NULL;
+	CCommMgr::getInstance().m_mapTimeProcs.erase(dwTimerId);
+
+	pProcessor->onTimer(dwTimerId,pClientData);
+
 }
 
 int CCommMgr::delTimer(uint32_t dwTimerId)
@@ -844,12 +860,9 @@ int CCommMgr::delTimer(uint32_t dwTimerId)
 
 	if(it != m_mapTimeProcs.end())
 	{
-		if(it->second != NULL)
-		{
-			delete (it->second);
-			it->second = NULL;
-		}
-
+		delete (it->second);
+		it->second = NULL;
+		m_mapTimeProcs.erase(it);
 	}
     return m_oCEvent.delTimer(dwTimerId);
 }
