@@ -98,14 +98,8 @@ int CCommMgr::createSrv(int iType,const string &sIp,uint16_t wPort,uint32_t dwIn
 
 }
 
-int CCommMgr::createAsyncConn(int iType,uint32_t dwInitRecvBufLen,uint32_t dwMaxRecvBufLen,uint32_t dwInitSendBufLen,uint32_t dwMaxSendBufLen)
+int CCommMgr::createAsyncConn(uint32_t dwInitRecvBufLen,uint32_t dwMaxRecvBufLen,uint32_t dwInitSendBufLen,uint32_t dwMaxSendBufLen)
 {
-
-    if( iType != CONN_TCP )
-    {
-        snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,server type error",__FILE__,__LINE__);
-        return -1;
-    }
 
     SServerInfo *pstServerInfo=new SServerInfo;
 
@@ -119,7 +113,7 @@ int CCommMgr::createAsyncConn(int iType,uint32_t dwInitRecvBufLen,uint32_t dwMax
     pstServerInfo->sIp ="";
     pstServerInfo->wPort = 0;
 
-    pstServerInfo->iType=iType;
+    pstServerInfo->iType = CONN_TCP;
 
 
     pstServerInfo->dwInitRecvBufLen=dwInitRecvBufLen;
@@ -967,6 +961,11 @@ CCommMgr::~CCommMgr()
             delete (*it);
         }
     }
+
+	for(map<int,SProcessor*>::iterator it = m_mapTimeProcs.begin();it!=m_mapTimeProcs.end();++it)
+	{
+		delete it->second;
+	}
 
 }
 

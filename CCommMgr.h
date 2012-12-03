@@ -111,7 +111,7 @@ public:
     }
 
     int createSrv(int iType,const string &sIp,uint16_t wPort,uint32_t dwInitRecvBufLen,uint32_t dwMaxRecvBufLen,uint32_t dwInitSendBufLen,uint32_t dwMaxSendBufLen);
-    int createAsyncConn(int iType,uint32_t dwInitRecvBufLen,uint32_t dwMaxRecvBufLen,uint32_t dwInitSendBufLen,uint32_t dwMaxSendBufLen);
+    int createAsyncConn(uint32_t dwInitRecvBufLen,uint32_t dwMaxRecvBufLen,uint32_t dwInitSendBufLen,uint32_t dwMaxSendBufLen);
     int setProcessor(int iSrvId,CProcessor * pProcessor,CPackageFilter * pPackageFilter);
 
 	void setMaxClients(uint32_t dwMaxClient){ m_dwMaxClient = dwMaxClient ;}

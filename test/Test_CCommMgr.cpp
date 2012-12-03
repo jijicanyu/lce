@@ -95,10 +95,12 @@ public:
 	{
 		//printf("onclose id=%d\n",stSession.iFd);
 		//cout<< "onClose"<<endl;
+		dwOutCount++;
 	}
 
 	void onConnect(SSession &stSession,bool bOk)
 	{
+		dwCount++;
 		//printf("onconnect id=%d\n",stSession.iFd);
 	}
 
@@ -196,7 +198,7 @@ int main()
     }
 
 	CCommMgr::getInstance().setProcessor(iSrv1,&CProCenter::getInstance(),&oCHttpPackageFilter);
-
+	CCommMgr::getInstance().setMaxClients(100000);
 
     CCommMgr::getInstance().addTimer(0,2000,&CProCenter::getInstance(),NULL);
     CCommMgr::getInstance().addSigHandler(SIGINT,&CProCenter::getInstance());

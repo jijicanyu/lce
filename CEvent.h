@@ -14,7 +14,7 @@
 #include <set>
 #include <algorithm>
 #include <fcntl.h>
-#include <iostream>
+
 using namespace std;
 
 namespace lce
