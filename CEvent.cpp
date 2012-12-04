@@ -393,7 +393,7 @@ int CEvent::run()
                 else
                 {
                     SFdEvent &stFdEvent=m_stFdEvents[m_stEPollState.stEvents[i].data.fd];
-                    if(stFdEvent.pReadProc)
+                    if(stFdEvent.pReadProc && (stFdEvent.iEventType&EV_READ) == EV_READ)
                         stFdEvent.pReadProc(m_stEPollState.stEvents[i].data.fd,stFdEvent.pClientRData);
                 }
             }
@@ -401,7 +401,7 @@ int CEvent::run()
             {
 
                 SFdEvent &stFdEvent=m_stFdEvents[m_stEPollState.stEvents[i].data.fd];
-                if(stFdEvent.pWriteProc)
+                if(stFdEvent.pWriteProc && (stFdEvent.iEventType&EV_WRITE) == EV_WRITE)
                     stFdEvent.pWriteProc(m_stEPollState.stEvents[i].data.fd,stFdEvent.pClientWData);
             }
         }

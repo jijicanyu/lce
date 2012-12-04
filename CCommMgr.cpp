@@ -466,15 +466,31 @@ void CCommMgr::onConnect(int iFd,void *pData)
 	SClientInfo * pstClientInfo =CCommMgr::getInstance().m_vecClients[iFd];
     SServerInfo * pstServerInfo=CCommMgr::getInstance().m_vecServers[pstClientInfo->iSrvId];
 
+	int error;
+	socklen_t ilen = sizeof(int);
+	getsockopt(iFd, SOL_SOCKET, SO_ERROR, &error, &ilen);
+	
+	
     SSession stSession;
     stSession.dwBeginTime=lce::getTickCount();
     stSession.iFd=iFd;
     stSession.iSvrId=pstServerInfo->iSrvId;
     stSession.stClientAddr=pstClientInfo->stClientAddr;
 
-    CCommMgr::getInstance().m_oCEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_READ,CCommMgr::onTcpRead,pstClientInfo);
-    if (pstServerInfo->pProcessor != NULL)
-        pstServerInfo->pProcessor->onConnect(stSession,true);
+	if(error == 0)
+	{
+		if (pstServerInfo->pProcessor != NULL)
+			pstServerInfo->pProcessor->onConnect(stSession,true);
+
+		CCommMgr::getInstance().m_oCEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_READ,CCommMgr::onTcpRead,pstClientInfo);
+	}
+	else
+	{
+		if (pstServerInfo->pProcessor != NULL)
+			pstServerInfo->pProcessor->onConnect(stSession,false);
+		CCommMgr::getInstance().close(iFd);
+	}
+
 
 }
 
@@ -775,14 +791,17 @@ int CCommMgr::connect(int iSrvId,const string &sIp,uint16_t wPort)
         }
         else
         {
-            if (errno == EINPROGRESS)
+
+			if (errno == EINPROGRESS)
             {
+
                 m_oCEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_WRITE,CCommMgr::onConnect,pstClientInfo);
                 m_vecClients[pstClientInfo->iFd]=pstClientInfo;
                 return pstClientInfo->iFd;
             }
             else
             {
+
                 snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
                 delete pstClientInfo;
 				pstClientInfo = NULL;
@@ -947,7 +966,7 @@ CCommMgr::~CCommMgr()
 {
     m_oCEvent.stop();
 
-    for(vector <SServerInfo *>::iterator it=m_vecServers.begin();it!=m_vecServers.end();++it)
+	for(vector <SServerInfo *>::iterator it=m_vecServers.begin();it!=m_vecServers.end();++it)
     {
         lce::close((*it)->iFd);
         delete (*it);
