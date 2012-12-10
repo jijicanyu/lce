@@ -367,6 +367,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\test\Test_Connector.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\test\Test_CTask.cpp"
 				>
 			</File>

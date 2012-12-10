@@ -9,6 +9,7 @@ using std::pair;
 namespace lce
 {
 
+
 	struct SHashNodeBase{
 		SHashNodeBase* pHashNext;	//hash列表使用
 		SHashNodeBase* pHashPre;	//hash列表使用

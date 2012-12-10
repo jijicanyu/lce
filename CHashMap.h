@@ -9,23 +9,6 @@ using std::pair;
 namespace lce
 {
 
-	inline size_t lceHashString(const char* __s)
-	{
-		unsigned long __h = 0; 
-		for ( ; *__s; ++__s)
-			__h = 5*__h + *__s;
-
-		return size_t(__h);
-	}
-
-	inline size_t lceHashString(const std::string& __s)
-	{
-		unsigned long __h = 0; 
-		for ( size_t i=0; i<__s.size(); ++i )
-			__h = 5*__h + __s[i];
-
-		return size_t(__h);
-	}
 
 	struct SHashNodeBase{
 		SHashNodeBase* pHashNext;	//hash列表使用

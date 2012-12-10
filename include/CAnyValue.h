@@ -250,64 +250,6 @@ public:
     typedef std::map<BufType, CAnyValue> MapType;
     typedef std::deque<CAnyValue> VecType;
     typedef std::runtime_error Error;
-    typedef std::map<BufType, int> MAPKEY;
-    typedef std::vector<BufType> VECKEY;
-
-
-#pragma pack(1)
-    struct SEncodeHead
-    {
-        SEncodeHead()
-        {
-            memset(this, 0, sizeof(SEncodeHead));
-        }
-        unsigned char ucKeyTableType:2;	//0:一个字节表示key value的值； 1: 两个字节表示key value的值； 2：四个字节表示key value的值
-        uint32_t dwKeyTableOffset;
-        unsigned char szReserve[3];
-    };
-#pragma pack()
-
-
-    struct SEncode
-    {
-        SEncode()
-            :ucUsingByteCount(1)
-            ,iKeyValue(0)
-            ,bNeedTransform(false)
-        {}
-        unsigned char ucUsingByteCount;		//使用几个字节保存keyvalue信息
-        int iKeyValue;						//优化使用的key值
-        bool bNeedTransform;			//是否需要转换
-        MAPKEY mapKeys;						//string key
-        void clear()
-        {
-            mapKeys.clear();
-            bNeedTransform = false;
-            iKeyValue = 0;
-            ucUsingByteCount = 1;
-        }
-    };
-
-    struct SDecode
-    {
-        SDecode()
-            :ucUsingByteCount(1)
-            ,bNeedTransform(false)
-            ,ucValueType(DType::Null)
-        {
-        };
-        unsigned char ucUsingByteCount;		//使用几个字节保存keyvalue信息
-        bool bNeedTransform;			//是否需要转换
-        unsigned char ucValueType;
-        VECKEY vecKeys;
-        void clear()
-        {
-            ucUsingByteCount = 1;
-            bNeedTransform = false;
-            ucValueType = DType::Null;
-            vecKeys.clear();
-        }
-    };
 
     union ValueHolder
     {
@@ -628,24 +570,15 @@ public:
         return m_strNull;
     }
 
-    const char* data()
-    {
-        return m_sEncodeData.data();
-    }
-    size_t size()
-    {
-        return m_sEncodeData.size();
-    }
 
-
-    const char *valueData() const
+    const char *data() const
     {
         if ( DType::String == m_ucType && NULL != m_value.buf  )		return m_value.buf->data();
         return m_strNull.data();
 
     }
 
-    const size_t valueSize()	const
+    const size_t size()	const
     {
         if ( m_ucType == DType::String )
         {
@@ -709,7 +642,7 @@ public:
 
     CAnyValue& operator[](const std::string& sName)
     {
-        this->InitAsMap();
+        this->initAsMap();
         if ( m_value.map == NULL )
         {
             throw Error("anyValue type error: no map type.");
@@ -730,7 +663,7 @@ public:
     CAnyValue& operator[](const char* pszName)
     {
         std::string sName(pszName);
-        this->InitAsMap();
+        this->initAsMap();
         if ( m_value.map == NULL )
         {
             throw Error("anyValue type error: no map type.");
@@ -761,7 +694,7 @@ public:
     //map
     void insert(const std::string& sName, const CAnyValue& oValue)
     {
-        this->InitAsMap();
+        this->initAsMap();
         if ( (DType::Map == m_ucType) && NULL != m_value.map )
         {
             m_bHasData = true;
@@ -775,7 +708,7 @@ public:
     //vector
     void push_back(const CAnyValue& oValue)
     {
-        this->InitAsVector();
+        this->initAsVector();
         if ( (DType::Vector == m_ucType) && NULL != m_value.vec )
         {
             m_bHasData = true;
@@ -784,7 +717,7 @@ public:
     }
     void pop_back()
     {
-        this->InitAsVector();
+        this->initAsVector();
         if ( (DType::Vector == m_ucType) && NULL != m_value.vec )
         {
             m_bHasData = true;
@@ -793,7 +726,7 @@ public:
     }
     void push_front(const CAnyValue& oValue)
     {
-        this->InitAsVector();
+        this->initAsVector();
         if ( (DType::Vector == m_ucType) && NULL != m_value.vec )
         {
             m_bHasData = true;
@@ -802,7 +735,7 @@ public:
     }
     void pop_front()
     {
-        this->InitAsVector();
+        this->initAsVector();
         if ( (DType::Vector == m_ucType) && NULL != m_value.vec )
         {
             m_bHasData = true;
@@ -865,37 +798,7 @@ public:
         this->clear();
     }
 
-
-
-    void decode(size_t dwDecodePos,const unsigned char* pData, const size_t dwDataSize)
-    {
-        this->decode(dwDecodePos,(char*)pData, dwDataSize);
-    }
-
-
-    void decode(size_t dwDecodePos,const char* pData, const size_t dwDataSize)
-    {
-        if ( dwDataSize < 1 )
-        {
-            return ;
-        }
-        unsigned char ucEncodeType = *(unsigned char*)(pData+dwDecodePos);
-        dwDecodePos += 1;
-        if ( ucEncodeType == EncodeType::NORMAL )
-        {
-            //正常编解码
-            if ( dwDecodePos < dwDataSize )
-                this->decodeNM(dwDecodePos,pData, dwDataSize);
-        }
-        else if ( ucEncodeType == EncodeType::TYPE1 )
-        {
-            if ( dwDecodePos <  dwDataSize )
-                this->decodeOpt(dwDecodePos, pData, dwDataSize);
-        }
-
-
-    }
-    void decodeJSON(const char *szBuf,int iSize)
+    void decodeJSON(const char *szBuf,const size_t iSize)
     {
         int dwPos = 0;
         skipSpaces(dwPos,szBuf,iSize);
@@ -917,12 +820,12 @@ public:
             readString(dwPos,sValue,szBuf,iSize);
             dwPos++;
 
-            this->InitAsBuf();
+            this->initAsBuf();
             this->m_value.buf->assign(sValue.data(), sValue.size(), true);
         }
         else if(szBuf[dwPos] == 't')
         {
-            if (dwPos+4 > iSize)
+            if (dwPos+4 > (int)iSize)
             {
                 throw runtime_error("not a bool value");
             }
@@ -938,7 +841,7 @@ public:
         }
         else if(szBuf[dwPos] == 'n')
         {
-            if (dwPos+4 > iSize)
+            if (dwPos+4 > (int)iSize)
             {
                 throw runtime_error("not a null value");
             }
@@ -951,7 +854,7 @@ public:
         }
         else if(szBuf[dwPos] == 'f')
         {
-            if (dwPos+5 > iSize)
+            if (dwPos+5 > (int)iSize)
             {
                 throw runtime_error("not a bool value");
             }
@@ -984,35 +887,15 @@ public:
         }
     }
 
-    void encode(const unsigned char ucEncodeType=EncodeType::NORMAL)
+    void encodeXMLWithHead(std::string& sBuf,const bool bUtf8=true)
     {
-        //清除包体数据
-        m_sEncodeData.clear();
-        m_sEncodeData.append((char*)&ucEncodeType, sizeof(ucEncodeType));
-
-        if ( ucEncodeType == EncodeType::TYPE1 )
-        {
-            encodeOpt(m_sEncodeData);
-        }
-        else
-        {
-            encodeNM(m_sEncodeData);
-        }
-    }
-
-
-
-
-    void encodeXML(const bool bUtf8=true)
-    {
-        m_sEncodeData.clear();
         if (bUtf8)
-            m_sEncodeData += "<?xml version=\"1.0\" encoding=\"UTF-8\"?><xmldata>";
+            sBuf += "<?xml version=\"1.0\" encoding=\"UTF-8\"?><xmldata>";
         else
-            m_sEncodeData += "<?xml version=\"1.0\" encoding=\"GB2312\"?><xmldata>";
+            sBuf += "<?xml version=\"1.0\" encoding=\"GB2312\"?><xmldata>";
 
-        encodeXML(m_sEncodeData);
-        m_sEncodeData += "</xmldata>";
+        encodeXML(sBuf);
+        sBuf += "</xmldata>";
     }
 
     void encodeXML(std::string& sBuf)
@@ -1078,13 +961,6 @@ public:
         }
     }
 
-    void encodeJSON()
-    {
-
-        m_sEncodeData.clear();
-        encodeJSON(m_sEncodeData);
-
-    }
     static std::vector<DECODE_FUNC> m_vecDecodeFuncs;
     static const CAnyValue m_null;
     static const std::string m_strNull;
@@ -1257,195 +1133,7 @@ public:
     }
 
 private:
-
-    void decode_type1(size_t& dwDecodePos, const char* pData, const size_t dwDataSize, const SDecode& stDecode)
-    {
-        if ( stDecode.bNeedTransform )
-        {
-            m_ucSubType = stDecode.ucValueType;
-            *(bool*)&stDecode.bNeedTransform = false;
-        }
-        else
-        {
-            check(dwDecodePos+1, dwDataSize);
-            m_ucSubType = *(pData+dwDecodePos);
-            dwDecodePos++;
-        }
-        switch(m_ucSubType)
-        {
-        case DType::Bool:
-        {
-            m_ucType = DType::Bool;
-            check(dwDecodePos+1, dwDataSize);
-            m_value.integer = *(unsigned char*)(pData+dwDecodePos);
-            ++dwDecodePos;
-        }
-        break;
-        case DType::Integer1:
-        {
-            m_ucType = DType::Integer;
-            check(dwDecodePos+1, dwDataSize);
-            m_value.integer = *(unsigned char*)(pData+dwDecodePos);
-            ++dwDecodePos;
-        }
-        break;
-        case DType::Integer2:
-        {
-            m_ucType = DType::Integer;
-            check(dwDecodePos+2, dwDataSize);
-            m_value.integer = ntohs(*(unsigned short*)(pData+dwDecodePos));
-            dwDecodePos += 2;
-        }
-        break;
-        case DType::Integer4:
-        {
-            m_ucType = DType::Integer;
-            check(dwDecodePos+4, dwDataSize);
-            m_value.integer = ntohl(*(uint32_t*)(pData+dwDecodePos));
-            dwDecodePos += 4;
-        }
-        break;
-        case DType::Integer8:
-        {
-            m_ucType = DType::Integer;
-            check(dwDecodePos+8, dwDataSize);
-            //				m_value.integer = (*(long long*)(pData+dwDecodePos));
-            m_value.integer = ntohll(*(uint64_t*)(pData+dwDecodePos));
-            dwDecodePos += 8;
-        }
-        break;
-        case DType::Float:
-        {
-            m_ucType = DType::Float;
-            check(dwDecodePos+1, dwDataSize);
-            unsigned char ucStrLen = *(unsigned char*)(pData+dwDecodePos);
-            ++dwDecodePos;
-            check(dwDecodePos+ucStrLen, dwDataSize);
-
-            std::stringstream stream;
-            stream.write(pData+dwDecodePos,ucStrLen);
-            stream.precision(16);
-            stream>>m_value.flValue;
-            dwDecodePos += ucStrLen;
-
-        }
-        break;
-        case DType::String1:
-        {
-            this->InitAsBuf();
-            check(dwDecodePos+1, dwDataSize);
-            unsigned char ucStrLen = *(unsigned char*)(pData+dwDecodePos);
-            ++dwDecodePos;
-            check(dwDecodePos+ucStrLen, dwDataSize);
-            m_value.buf->assign(pData+dwDecodePos, ucStrLen, true);
-            dwDecodePos += ucStrLen;
-        }
-        break;
-        case DType::String2:
-        {
-            this->InitAsBuf();
-            check(dwDecodePos+2, dwDataSize);
-            unsigned short wStrLen = ntohs(*(unsigned short*)(pData+dwDecodePos));
-            dwDecodePos += 2;
-            check(dwDecodePos+wStrLen, dwDataSize);
-            m_value.buf->assign(pData+dwDecodePos, wStrLen, true);
-            dwDecodePos += wStrLen;
-        }
-        break;
-        case DType::String4:
-        {
-            this->InitAsBuf();
-            check(dwDecodePos+4, dwDataSize);
-            uint32_t dwStrLen = ntohl(*(uint32_t*)(pData+dwDecodePos));
-            dwDecodePos += 4;
-            check(dwDecodePos+dwStrLen, dwDataSize);
-            m_value.buf->assign(pData+dwDecodePos, dwStrLen, true);
-            dwDecodePos += dwStrLen;
-        }
-        break;
-        case DType::Vector:
-        {
-            this->InitAsVector();
-            check(dwDecodePos+4, dwDataSize);
-            uint32_t dwSize = ntohl(*(uint32_t*)(pData+dwDecodePos));
-            dwDecodePos += 4;
-            while ( dwSize > 0 )
-            {
-                --dwSize;
-                CAnyValue value;
-                value.decode_type1(dwDecodePos, pData, dwDataSize, stDecode);
-                m_value.vec->push_back(value);
-
-            }
-        }
-        break;
-        case DType::Map:
-        {
-            this->InitAsMap();
-            check(dwDecodePos+4, dwDataSize);
-            uint32_t dwSize = ntohl(*(uint32_t*)(pData+dwDecodePos));
-            dwDecodePos += 4;
-            while ( dwSize > 0 )
-            {
-                --dwSize;
-                uint32_t dwKeyType = 0;
-                if ( 1 == stDecode.ucUsingByteCount )
-                {
-                    check(dwDecodePos+1, dwDataSize);
-                    dwKeyType = *(unsigned char*)(pData+dwDecodePos);
-                    ++dwDecodePos;
-                }
-                else if( 2==stDecode.ucUsingByteCount )
-                {
-                    check(dwDecodePos+2, dwDataSize);
-                    dwKeyType = ntohs(*(unsigned short*)(pData+dwDecodePos));
-                    dwDecodePos += 2;
-                }
-                else if ( 4==stDecode.ucUsingByteCount )
-                {
-                    check(dwDecodePos+4, dwDataSize);
-                    dwKeyType = ntohl(*(uint32_t*)(pData+dwDecodePos));
-                    dwDecodePos += 4;
-                }
-                else
-                {
-                    assert(false);
-                    throw Error("stDecode.ucUsingByteCount error.");
-                }
-                *(unsigned char*)&stDecode.ucValueType = static_cast<unsigned char>(dwKeyType%13);
-                uint32_t dwKeyValue = dwKeyType/13;
-                assert(dwKeyValue < stDecode.vecKeys.size());
-                if ( dwKeyValue >= stDecode.vecKeys.size() )
-                    throw Error("dwKeyValue >= stDecode.vecKeys.size()");
-
-                BufType sName(stDecode.vecKeys[dwKeyType/13]);
-
-                *(bool*)&stDecode.bNeedTransform = true;
-                CAnyValue value;
-                value.decode_type1(dwDecodePos, pData, dwDataSize, stDecode);
-                m_value.map->insert( MapType::value_type(sName, value) );
-                *(bool*)&stDecode.bNeedTransform = false;
-            }
-
-        }
-        break;
-        case DType::EXT:
-        {
-            //check(dwDecodePos+1, dwDataSize);
-            //unsigned char ucType = *(unsigned char*)(pData+dwDecodePos);
-            //++dwDecodePos;
-        }
-        break;
-        case DType::Null:
-        {
-
-        }
-        break;
-        default:
-            break;
-        }
-    }
-
+  
     static void decode_bool(size_t& dwDecodePos, const char* pData, const size_t dwDataSize, this_type& thisobj)
     {
         thisobj.m_ucType = DType::Bool;
@@ -1488,7 +1176,7 @@ private:
     }
     static void decode_string1(size_t& dwDecodePos, const char* pData, const size_t dwDataSize, this_type& thisobj)
     {
-        thisobj.InitAsBuf();
+        thisobj.initAsBuf();
         check(dwDecodePos+1, dwDataSize);
         unsigned char ucStrLen = *(unsigned char*)(pData+dwDecodePos);
         ++dwDecodePos;
@@ -1498,7 +1186,7 @@ private:
     }
     static void decode_string2(size_t& dwDecodePos, const char* pData, const size_t dwDataSize, this_type& thisobj)
     {
-        thisobj.InitAsBuf();
+        thisobj.initAsBuf();
         check(dwDecodePos+2, dwDataSize);
         unsigned short wStrLen = ntohs(*(unsigned short*)(pData+dwDecodePos));
         dwDecodePos += 2;
@@ -1508,7 +1196,7 @@ private:
     }
     static void decode_string4(size_t& dwDecodePos, const char* pData, const size_t dwDataSize, this_type& thisobj)
     {
-        thisobj.InitAsBuf();
+        thisobj.initAsBuf();
         check(dwDecodePos+4, dwDataSize);
         uint32_t dwStrLen = ntohl(*(uint32_t*)(pData+dwDecodePos));
         dwDecodePos += 4;
@@ -1518,7 +1206,7 @@ private:
     }
     static void decode_vector(size_t& dwDecodePos, const char* pData, const size_t dwDataSize, this_type& thisobj)
     {
-        thisobj.InitAsVector();
+        thisobj.initAsVector();
         check(dwDecodePos+4, dwDataSize);
         uint32_t dwSize = ntohl(*(uint32_t*)(pData+dwDecodePos));
         dwDecodePos += 4;
@@ -1527,14 +1215,14 @@ private:
 
             --dwSize;
             CAnyValue value;
-            value.decodeNM(dwDecodePos, pData, dwDataSize);
+            value.decode(dwDecodePos, pData, dwDataSize);
             thisobj.m_value.vec->push_back(value);
 
         }
     }
     static void decode_map(size_t& dwDecodePos, const char* pData, const size_t dwDataSize, this_type& thisobj)
     {
-        thisobj.InitAsMap();
+        thisobj.initAsMap();
         check(dwDecodePos+4, dwDataSize);
         uint32_t dwSize = ntohl(*(uint32_t*)(pData+dwDecodePos));
         dwDecodePos += 4;
@@ -1547,11 +1235,10 @@ private:
             check(dwDecodePos+ucNameLen, dwDataSize);
             BufType sName(pData+dwDecodePos, ucNameLen, true);
             dwDecodePos += ucNameLen;
-//				cout << std::string(sName.data(), sName.size()) << endl;
             if ( dwDataSize > dwDecodePos )
             {
                 CAnyValue value;
-                value.decodeNM(dwDecodePos, pData, dwDataSize);
+                value.decode(dwDecodePos, pData, dwDataSize);
                 thisobj.m_value.map->insert( MapType::value_type(sName, value) );
             }
         }
@@ -1581,101 +1268,6 @@ private:
         stream>>thisobj.m_value.flValue;
         dwDecodePos += ucStrLen;
     }
-
-    void decodeNM(size_t& dwDecodePos, const char* pData, const size_t dwDataSize)
-    {
-        static DECODE_FUNC arDecodeFunc[13] = {&decode_integer1, &decode_integer2, &decode_integer4, &decode_integer8,&decode_string1,
-                                               &decode_string2, &decode_string4, &decode_vector, &decode_map,  &decode_ext, &decode_float,&decode_bool,&decode_null
-                                              };
-        check(dwDecodePos+1, dwDataSize);
-        m_ucSubType = *(pData+dwDecodePos);
-        dwDecodePos++;
-
-        if ( m_ucSubType< 13 )
-        {
-            arDecodeFunc[m_ucSubType](dwDecodePos, pData, dwDataSize, *this);
-        }
-    }
-
-
-    void decodeOpt(size_t &dwDecodePos,const char* pData, const size_t dwDataSize)
-    {
-
-        m_stDecode.clear();
-        if ( dwDataSize < dwDecodePos+sizeof(SEncodeHead) )
-        {
-            assert(false);
-            throw Error("decode type1 error.");
-        }
-        //优化编解码
-        //read encode head
-        SEncodeHead stEncodeHead;
-        memcpy(&stEncodeHead, pData+dwDecodePos, sizeof(stEncodeHead));
-        stEncodeHead.dwKeyTableOffset = ntohl(stEncodeHead.dwKeyTableOffset);
-
-        dwDecodePos += sizeof(SEncodeHead);
-        decodeKeyTable(stEncodeHead, pData+stEncodeHead.dwKeyTableOffset, dwDataSize-stEncodeHead.dwKeyTableOffset);
-
-        if ( dwDecodePos <  dwDataSize )
-            this->decode_type1(dwDecodePos, pData, stEncodeHead.dwKeyTableOffset, m_stDecode);
-
-    }
-
-    void decodeKeyTable(const SEncodeHead stEncodeHead, const char* pData, const size_t dwDataSize)
-    {
-        //decode key table
-        size_t dwPos = 0;
-        unsigned short wKeyTableSize = ntohs(*(unsigned short*)(pData+dwPos));
-
-        dwPos += 2;
-        m_stDecode.vecKeys.resize(wKeyTableSize+1);
-        if ( 0 == stEncodeHead.ucKeyTableType )
-        {
-            for ( uint32_t i=0; i<wKeyTableSize; ++i )
-            {
-                check(dwPos+2, dwDataSize);
-                unsigned char ucKeyValue = *(pData+dwPos);
-                dwPos += 1;
-                unsigned char ucKeyNameLen = *(pData+dwPos);
-                dwPos += 1;
-                check(dwPos+ucKeyNameLen, dwDataSize);
-                std::string sName(pData+dwPos, ucKeyNameLen);
-                dwPos += ucKeyNameLen;
-
-                assert( ucKeyValue < m_stDecode.vecKeys.size());
-                if ( ucKeyValue >= m_stDecode.vecKeys.size() )
-                    throw Error("ucKeyValue >= m_stDecode.vecKeys.size()");
-                m_stDecode.vecKeys[ucKeyValue] = sName;
-            }
-        }
-        else if ( 1 == stEncodeHead.ucKeyTableType )
-        {
-            for ( uint32_t i=0; i<wKeyTableSize; ++i )
-            {
-                check(dwPos+3, dwDataSize);
-                unsigned short wKeyValue = *(unsigned short*)(pData+dwPos);
-                dwPos += 2;
-                unsigned char ucKeyNameLen = *(pData+dwPos);
-                dwPos += 1;
-                check(dwPos+ucKeyNameLen, dwDataSize);
-                std::string sName(pData+dwPos, ucKeyNameLen);
-                dwPos += ucKeyNameLen;
-
-                assert( wKeyValue < m_stDecode.vecKeys.size());
-                if ( wKeyValue >= m_stDecode.vecKeys.size() )
-                    throw Error("wKeyValue >= m_stDecode.vecKeys.size()");
-
-                m_stDecode.vecKeys[wKeyValue] = sName;
-            }
-        }
-        else
-        {
-            assert(false);
-            throw Error("stEncodeHead.ucKeyTableType error: no suport.");
-        }
-    }
-
-
 
     static inline std::string unicodeToUTF8(unsigned int cp)
     {
@@ -1734,8 +1326,8 @@ private:
             {
                 string sOut;
                 sOut.append(szBuf+dwPos,min(100,iSize-dwPos));
-                cout<<sOut<<endl;
-                throw runtime_error( "Bad unicode escape sequence in string: hexadecimal digit expected.");
+				sOut+="Bad unicode escape sequence in string: hexadecimal digit expected. in "+sOut;
+                throw runtime_error(sOut.c_str());
             }
 
 
@@ -1829,8 +1421,8 @@ private:
         {
             string sOut;
             sOut.append(szBuf+dwPos,min(100,iSize-dwPos));
-            cout<<sOut<<endl;
-            throw runtime_error("read string error");
+			sOut+="read string error. in "+sOut;
+			throw runtime_error(sOut.c_str());
         }
     }
 
@@ -1860,7 +1452,7 @@ private:
 
     static void readArray(int &dwPos,CAnyValue &oValue,const char *szBuf,int iSize)
     {
-        oValue.InitAsVector();
+        oValue.initAsVector();
 
         while (dwPos < iSize )
         {
@@ -1966,8 +1558,8 @@ private:
             {
                 string sOut;
                 sOut.append(szBuf+dwPos,min(100,iSize-dwPos));
-                cout<<sOut<<endl;
-                throw runtime_error("expect ','");
+				sOut="expect ',' in "+sOut;
+                throw runtime_error(sOut.c_str());
             }
         }
 
@@ -1976,7 +1568,7 @@ private:
 
     static void readObj(int &dwPos,CAnyValue &oValue,const char *szBuf,int iSize)
     {
-        oValue.InitAsMap();
+        oValue.initAsMap();
 
         while(dwPos < iSize)
         {
@@ -1998,8 +1590,8 @@ private:
                 {
                     string sOut;
                     sOut.append(szBuf+dwPos,min(100,iSize-dwPos));
-                    cout<<sOut<<endl;
-                    throw runtime_error("expect ':'");
+					sOut+="expect ':'. in "+sOut;
+					throw runtime_error(sOut.c_str());
                 }
 
 
@@ -2042,8 +1634,8 @@ private:
                     {
                         string sOut;
                         sOut.append(szBuf+dwPos,min(100,iSize-dwPos));
-                        cout<<sOut<<endl;
-                        throw runtime_error("not a bool value");
+						sOut="not a bool value in "+sOut;
+						throw runtime_error(sOut.c_str());
                     }
 
                     oValue[sKey]=true;
@@ -2109,8 +1701,8 @@ private:
                 {
                     string sOut;
                     sOut.append(szBuf+dwPos,min(100,iSize-dwPos));
-                    cout<<sOut<<endl;
-                    throw runtime_error("expect ','");
+					sOut="expect ',' in "+sOut;
+					throw runtime_error(sOut.c_str());
                 }
 
             }
@@ -2118,176 +1710,13 @@ private:
             {
                 string sOut;
                 sOut.append(szBuf+dwPos,min(100,iSize-dwPos));
-                cout<<sOut<<endl;
-                throw runtime_error("expect '\"'");
+				sOut="expect '\"' in "+sOut;
+				throw runtime_error(sOut.c_str());
             }
         }
 
     }
-
-    void encode_type1(std::string& sBuf, SEncode& stEncode)
-    {
-        switch(m_ucType)
-        {
-
-        case DType::Bool:
-        {
-            writeKeyType(sBuf, stEncode, DType::Bool);
-            sBuf.push_back((char)m_value.integer);
-
-        }
-        break;
-        case DType::Integer:
-        {
-
-            if ( m_value.integer <= 0xFF )
-            {
-                writeKeyType(sBuf, stEncode, DType::Integer1);
-                sBuf.push_back((char)m_value.integer);
-            }
-
-            else if ( m_value.integer <= 0xFFFF )
-            {
-                writeKeyType(sBuf, stEncode, DType::Integer2);
-                unsigned short wTmp = htons(static_cast<unsigned short>(m_value.integer));
-                sBuf.append(reinterpret_cast<char*>(&wTmp),sizeof(wTmp));
-            }
-            else if ( m_value.integer <= 0xFFFFFFFF )
-            {
-                writeKeyType(sBuf, stEncode, DType::Integer4);
-                uint32_t dwTmp = htonl(static_cast<uint32_t>(m_value.integer));
-                sBuf.append(reinterpret_cast<char*>(&dwTmp),sizeof(dwTmp));
-            }
-            else
-            {
-                writeKeyType(sBuf, stEncode, DType::Integer8);
-                //					sBuf.append(reinterpret_cast<char*>(&m_value.integer),sizeof(m_value.integer));
-                uint64_t ui64Tmp = htonll(m_value.integer);
-                sBuf.append(reinterpret_cast<char*>(&ui64Tmp),sizeof(ui64Tmp));
-            }
-        }
-        break;
-
-        case DType::Float:
-        {
-            writeKeyType(sBuf, stEncode, DType::Float);
-            string sValue = toStr(m_value.flValue);
-            sBuf.push_back(static_cast<char>(sValue.size()));
-            sBuf.append(sValue.data(),sValue.size());
-        }
-        break;
-        case DType::String:
-        {
-            if ( m_value.buf->size() <= 0xFF )
-            {
-                writeKeyType(sBuf, stEncode, DType::String1);
-                sBuf.push_back(static_cast<char>(m_value.buf->size()));
-            }
-            else if ( m_value.buf->size() <= 0xFFFF )
-            {
-                writeKeyType(sBuf, stEncode, DType::String2);
-                unsigned short wSize = htons(static_cast<unsigned short>(m_value.buf->size()));
-                sBuf.append(reinterpret_cast<char*>(&wSize), sizeof(wSize));
-            }
-            else
-            {
-                writeKeyType(sBuf, stEncode, DType::String4);
-                uint32_t dwSize = htonl(static_cast<uint32_t>(m_value.buf->size()));
-                sBuf.append(reinterpret_cast<char*>(&dwSize), sizeof(dwSize));
-            }
-            sBuf.append(m_value.buf->data(), m_value.buf->size());
-        }
-        break;
-        case DType::Vector:
-        {
-            writeKeyType(sBuf, stEncode, DType::Vector);
-            uint32_t dwSize = htonl(static_cast<uint32_t>(m_value.vec->size()));
-            sBuf.append(reinterpret_cast<char*>(&dwSize), sizeof(dwSize));
-            for(VecType::iterator it=m_value.vec->begin(); it!=m_value.vec->end(); ++it)
-                it->encode_type1(sBuf,stEncode);
-        }
-        break;
-        case DType::Map:
-        {
-            writeKeyType(sBuf, stEncode, DType::Map);
-            uint32_t dwSize = 0;//htonl(static_cast<unsigned long>(m_value.map->size()));
-            size_t dwSizePos = sBuf.size();
-            sBuf.append(reinterpret_cast<char*>(&dwSize), sizeof(dwSize));
-            for(MapType::iterator it=m_value.map->begin(); it!=m_value.map->end(); ++it)
-            {
-                ++dwSize;
-                stEncode.iKeyValue = stEncode.mapKeys.insert( MAPKEY::value_type( std::string(it->first.data(), it->first.size()), (int)stEncode.mapKeys.size()) ).first->second;
-                stEncode.bNeedTransform = true;
-                it->second.encode_type1(sBuf, stEncode);
-                stEncode.bNeedTransform = false;
-
-            }
-            dwSize = htonl(dwSize);
-            memcpy((char*)sBuf.data()+dwSizePos, reinterpret_cast<char*>(&dwSize), sizeof(dwSize));
-        }
-        break;
-        case DType::Null:
-        {
-            writeKeyType(sBuf, stEncode, DType::Null);
-        }
-        default:
-            break;
-        }
-    }
-
-public:
-    void encodeOpt(std::string& sBuf)
-    {
-
-        //优化编解码
-        m_stEncode.clear();
-        //encode type1 信息
-        SEncodeHead stEncodeHead;
-        size_t dwEncodeHeadPos = sBuf.size();
-        sBuf.append(reinterpret_cast<char*>(&stEncodeHead), sizeof(stEncodeHead));
-
-        //编码
-        this->encode_type1(sBuf, m_stEncode);
-
-        //write key table;
-        stEncodeHead.dwKeyTableOffset = htonl((uint32_t)sBuf.size());
-
-        //table size
-        assert(m_stEncode.mapKeys.size() <= 0xFFFF);
-        unsigned short wKeyTableSize = htons((unsigned short)m_stEncode.mapKeys.size());
-        sBuf.append((char*)&wKeyTableSize, sizeof(wKeyTableSize));
-
-        if ( m_stEncode.mapKeys.size() <= 0xFF )
-        {
-            stEncodeHead.ucKeyTableType = 0;
-            for ( MAPKEY::const_iterator it=m_stEncode.mapKeys.begin(); it!=m_stEncode.mapKeys.end(); ++it )
-            {
-                assert(it->second <= 0xFF);
-                sBuf += (char)it->second;	//keyvalue
-                sBuf += static_cast<char>(it->first.size());
-                sBuf.append(it->first.data(), it->first.size());			//keyname
-            }
-        }
-        else if ( m_stEncode.mapKeys.size() <= 0xFFFF )
-        {
-            stEncodeHead.ucKeyTableType = 1;
-            for ( MAPKEY::const_iterator it=m_stEncode.mapKeys.begin(); it!=m_stEncode.mapKeys.end(); ++it )
-            {
-                assert(it->second <= 0xFFFF);
-                unsigned short wKeyValue = htons((unsigned short)it->second);
-                sBuf.append((char*)&wKeyValue, sizeof(wKeyValue));
-                sBuf += static_cast<char>(it->first.size());
-                sBuf.append(it->first.data(), it->first.size());			//keyname
-            }
-        }
-        else
-        {
-            assert(false);
-            throw Error("m_stEncode.mapKeys error: too large.");
-        }
-        memcpy((char*)(sBuf.data()+dwEncodeHeadPos), &stEncodeHead, sizeof(stEncodeHead));
-
-    }
+   
 private:
 
     static void encode_integer(std::string& sBuf, const ValueHolder& value)
@@ -2363,7 +1792,7 @@ private:
         sBuf.append(reinterpret_cast<char*>(&dwSize), sizeof(dwSize));
         for(VecType::iterator it=value.vec->begin(); it!=value.vec->end(); ++it)
         {
-            it->encodeNM(sBuf);
+            it->encode(sBuf);
         }
     }
 
@@ -2378,7 +1807,7 @@ private:
             ++dwSize;
             sBuf.push_back((char)it->first.size());
             sBuf.append(it->first.data(), it->first.size());
-            it->second.encodeNM(sBuf);
+            it->second.encode(sBuf);
         }
         dwSize = htonl(dwSize);
         memcpy((char*)sBuf.data()+dwSizePos, reinterpret_cast<char*>(&dwSize), sizeof(dwSize));
@@ -2393,7 +1822,27 @@ private:
 
 public:
 
-    void encodeNM(std::string& sBuf)
+	void decode(size_t &dwDecodePos,const unsigned char* pData, const size_t dwDataSize)
+	{
+		this->decode(dwDecodePos,(char*)pData, dwDataSize);
+	}
+
+	void decode(size_t& dwDecodePos, const char* pData, const size_t dwDataSize)
+	{
+		static DECODE_FUNC arDecodeFunc[13] = {&decode_integer1, &decode_integer2, &decode_integer4, &decode_integer8,&decode_string1,
+			&decode_string2, &decode_string4, &decode_vector, &decode_map,  &decode_ext, &decode_float,&decode_bool,&decode_null
+		};
+		check(dwDecodePos+1, dwDataSize);
+		m_ucSubType = *(pData+dwDecodePos);
+		dwDecodePos++;
+
+		if ( m_ucSubType< 13 )
+		{
+			arDecodeFunc[m_ucSubType](dwDecodePos, pData, dwDataSize, *this);
+		}
+	}
+
+    void encode(std::string& sBuf)
     {
 
         switch(m_ucType)
@@ -2440,7 +1889,7 @@ private:
             m_bInit = true;
         }
     }
-    void InitAsMap()
+    void initAsMap()
     {
         init();
         assert(DType::Null==m_ucType || DType::Map==m_ucType);
@@ -2455,10 +1904,10 @@ private:
         }
         else
         {
-            throw Error("InitAsMap error:type error.");
+            throw Error("initAsMap error:type error.");
         }
     }
-    void InitAsVector()
+    void initAsVector()
     {
         init();
         assert(DType::Null==m_ucType || DType::Vector==m_ucType);
@@ -2473,10 +1922,10 @@ private:
         }
         else
         {
-            throw Error("InitAsVector error:type error.");
+            throw Error("initAsVector error:type error.");
         }
     }
-    void InitAsBuf()
+    void initAsBuf()
     {
         init();
         assert(DType::Null==m_ucType || DType::String==m_ucType);
@@ -2491,7 +1940,7 @@ private:
         }
         else
         {
-            throw Error("InitAsBuf error:type error.");
+            throw Error("initAsBuf error:type error.");
         }
     }
 
@@ -2536,44 +1985,8 @@ private:
         m_ucSubType = rhs.m_ucSubType;
         m_bHasData = rhs.m_bHasData;
         m_bInit = rhs.m_bInit;
-        m_sEncodeData = rhs.m_sEncodeData;
     }
 
-
-
-    void writeKeyType(std::string& sBuf, SEncode& stEncode, const unsigned char ucValueType)
-    {
-        if ( stEncode.bNeedTransform )
-        {
-            int iKeyType = stEncode.iKeyValue*13 + ucValueType;
-            if ( stEncode.ucUsingByteCount==1 && iKeyType > 255 )
-            {
-                stEncode.ucUsingByteCount = 2;
-                //write ext type tell to encode using 2 byte.
-            }
-
-            if ( stEncode.ucUsingByteCount == 1 )
-            {
-                sBuf.push_back((char)iKeyType);
-            }
-            else if ( stEncode.ucUsingByteCount == 2 )
-            {
-                unsigned short wTmp = htons(static_cast<unsigned short>(iKeyType));
-                sBuf.append(reinterpret_cast<char*>(&wTmp),sizeof(wTmp));
-            }
-            else
-            {
-                assert(false);
-                throw Error("stEncode.ucUsingByteCount error.");
-            }
-
-            stEncode.bNeedTransform = false;
-        }
-        else
-        {
-            sBuf.push_back((char)ucValueType);
-        }
-    }
 
 private:
     unsigned char m_ucType;
@@ -2581,11 +1994,6 @@ private:
     ValueHolder m_value;
     bool m_bInit;
     bool m_bHasData;
-
-    std::string m_sEncodeData;
-    SEncode m_stEncode;
-    SDecode m_stDecode;
-
 
 };
 
@@ -2637,21 +2045,11 @@ public:
         m_sEncodeData += "</xmldata>";
     }
 
-    void encode(const unsigned char ucEncodeType=EncodeType::NORMAL)
+    void encode()
     {
         //清除包体数据
         m_sEncodeData.erase(sizeof(PKG_HEAD));
-
-        m_sEncodeData.append((char*)&ucEncodeType, sizeof(ucEncodeType));
-
-        if ( ucEncodeType == EncodeType::TYPE1 )
-        {
-            m_oAnyValues.encodeOpt(m_sEncodeData);
-        }
-        else
-        {
-            m_oAnyValues.encodeNM(m_sEncodeData);
-        }
+        m_oAnyValues.encode(m_sEncodeData);
     }
 
     void decode(const unsigned char* pData, const size_t dwDataSize)

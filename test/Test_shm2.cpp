@@ -15,6 +15,7 @@
 #include <string>
 #include <fcntl.h>
 #include "../CShmList.h"
+#include "../CShmHashMap.h"
 using namespace std;
 using namespace lce;
 
