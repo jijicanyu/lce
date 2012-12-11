@@ -2050,8 +2050,14 @@ public:
         //清除包体数据
         m_sEncodeData.erase(sizeof(PKG_HEAD));
         m_oAnyValues.encode(m_sEncodeData);
+
     }
 
+	void setEtx(uint8_t cEtx=0x3)
+	{
+		m_sEncodeData.append(1,(char)cEtx);
+	}
+	
     void decode(const unsigned char* pData, const size_t dwDataSize)
     {
         this->decode((char*)pData, dwDataSize);
@@ -2073,8 +2079,36 @@ public:
         {
             return ;
         }
-        m_oAnyValues.decode(sizeof(PKG_HEAD),pData,dwDataSize);
+		size_t dwPos = sizeof(PKG_HEAD);
+        m_oAnyValues.decode(dwPos,pData,dwDataSize);
     }
+
+
+	void decodeJSON(const unsigned char* pData, const size_t dwDataSize)
+	{
+		this->decodeJSON((char*)pData, dwDataSize);
+	}
+
+
+	void decodeJSON(const char* pData, const size_t dwDataSize)
+	{
+
+		if ( dwDataSize < sizeof(PKG_HEAD) )
+		{
+			assert(false);
+			throw Error("decode error:dwDataSize < sizeof(PKG_HEAD)");
+		}
+		m_oAnyValues.clear();
+		m_sEncodeData.assign(pData, sizeof(PKG_HEAD));
+
+		if ( dwDataSize < sizeof(PKG_HEAD)+1 )
+		{
+			return ;
+		}
+		size_t dwPos = sizeof(PKG_HEAD);
+		m_oAnyValues.decodeJSON(pData+dwPos,dwDataSize);
+	}
+
 
     const char* data()
     {

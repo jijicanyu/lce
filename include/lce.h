@@ -6,6 +6,7 @@
 #include "CCommMgr.h"
 #include "CHttpPackageFilter.h"
 #include "CH2ShortT3PackageFilter.h"
+#include "CH2T3PackageFilter.h"
 #include "CHttpParser.h"
 #include "CHttpResponse.h"
 #include "CLock.h"
