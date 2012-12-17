@@ -4,10 +4,14 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include "Utils.h"
 #include "CSocketBuf.h"
 #include "CPackageFilter.h"
+#include "CH2T3PackageFilter.h"
+#include "CH2ShortT3PackageFilter.h"
+#include "CHttpPackageFilter.h"
+#include "CRawPackageFilter.h"
 #include "CEvent.h"
-#include "Utils.h"
 #include "signal.h"
 #include "CProcessor.h"
 using namespace std;
@@ -23,9 +27,7 @@ struct SSession
 	uint16_t getPort()	{	return ntohs(stClientAddr.sin_port);	}
 	int iSvrId;
 	int iFd;
-    int iType;						//tcp use
 	struct sockaddr_in stClientAddr;
-	void *pData;					//由上层使用，会原值返回
 	time_t dwBeginTime;
 	time_t getDelayTime()
 	{
@@ -53,6 +55,15 @@ public:
         CONN_TCP=3,
     };
 
+	enum PKG_TYPE
+	{
+		PKG_RAW = 0,
+		PKG_H2ST3 = 1,
+		PKG_H2LT3 = 2,
+		PKG_HTTP = 3,
+
+	};
+
 private:
 
     struct SServerInfo
@@ -73,6 +84,11 @@ private:
         uint32_t dwMaxSendBufLen;
         CPackageFilter *pPackageFilter;
         int iType;
+
+		~SServerInfo()
+		{
+			if(pPackageFilter != NULL) { delete pPackageFilter;pPackageFilter = NULL ;}
+		}
     };
 
     struct SClientInfo
@@ -110,15 +126,15 @@ public:
         return 0;
     }
 
-    int createSrv(int iType,const string &sIp,uint16_t wPort,uint32_t dwInitRecvBufLen,uint32_t dwMaxRecvBufLen,uint32_t dwInitSendBufLen,uint32_t dwMaxSendBufLen);
-    int createAsyncConn(uint32_t dwInitRecvBufLen,uint32_t dwMaxRecvBufLen,uint32_t dwInitSendBufLen,uint32_t dwMaxSendBufLen);
-    int setProcessor(int iSrvId,CProcessor * pProcessor,CPackageFilter * pPackageFilter);
+    int createSrv(int iType,const string &sIp,uint16_t wPort,uint32_t dwInitRecvBufLen =10240,uint32_t dwMaxRecvBufLen=102400,uint32_t dwInitSendBufLen=102400,uint32_t dwMaxSendBufLen=1024000);
+    int createAsyncConn(uint32_t dwInitRecvBufLen =10240,uint32_t dwMaxRecvBufLen=102400,uint32_t dwInitSendBufLen=102400,uint32_t dwMaxSendBufLen=1024000);
+    int setProcessor(int iSrvId,CProcessor * pProcessor,int iPkgType = 0);
 
 	void setMaxClients(uint32_t dwMaxClient){ m_dwMaxClient = dwMaxClient ;}
 
 
     int close(const SSession &stSession);
-    int write(const SSession &stSession,const char* pszData, const int iSize,bool bClose);
+    int write(const SSession &stSession,const char* pszData, const int iSize,bool bClose = true);
 
 
     int writeTo(const int iSrvId, const string& sIp, const uint16_t wPort, const char* pszData, const int iSize);
@@ -126,14 +142,14 @@ public:
     int connect(int iSrvId,const string &sIp,uint16_t wPort);
 
 
-    int addTimer(uint32_t dwTimerId,uint32_t dwExpire,CProcessor * pProcessor,void *pData);
+    int addTimer(uint32_t dwTimerId,uint32_t dwExpire,CProcessor * pProcessor,void *pData = NULL);
     int delTimer(uint32_t dwTimerId);
 
     int addSigHandler(int iSignal,CProcessor * pProcessor);
 
     int start();
     int stop();
-    int sendMessage(uint32_t dwMsgType,CProcessor * pProcessor,void* pData);
+    int sendMessage(uint32_t dwMsgType,CProcessor * pProcessor,void* pData = NULL);
 
     const char * getErrMsg(){ return m_szErrMsg;}
 

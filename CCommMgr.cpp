@@ -132,7 +132,7 @@ int CCommMgr::createAsyncConn(uint32_t dwInitRecvBufLen,uint32_t dwMaxRecvBufLen
 
 }
 
-int CCommMgr::setProcessor(int iSrvId,CProcessor *pProcessor,CPackageFilter *pPackageFilter)
+int CCommMgr::setProcessor(int iSrvId,CProcessor *pProcessor,int iPkgType)
 {
 
     if( iSrvId <0 || iSrvId >(int) m_vecServers.size()-1 )
@@ -140,7 +140,7 @@ int CCommMgr::setProcessor(int iSrvId,CProcessor *pProcessor,CPackageFilter *pPa
         snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,iSrvId error",__FILE__,__LINE__);
         return -1;
     }
-	if(pProcessor == NULL || pPackageFilter == NULL)
+	if(pProcessor == NULL)
 	{
 		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,process pointer is null",__FILE__,__LINE__);
 		return -1;
@@ -148,7 +148,25 @@ int CCommMgr::setProcessor(int iSrvId,CProcessor *pProcessor,CPackageFilter *pPa
 
     SServerInfo * pstServerInfo=m_vecServers[iSrvId];
 	pstServerInfo->pProcessor = pProcessor;
-	pstServerInfo->pPackageFilter=pPackageFilter;
+
+	switch(iPkgType)
+	{
+	case PKG_RAW:
+		pstServerInfo->pPackageFilter = new CRawPackageFilter;
+		break;
+	case PKG_HTTP:
+		pstServerInfo->pPackageFilter = new CHttpPackageFilter;
+		break;
+	case PKG_H2ST3:
+		pstServerInfo->pPackageFilter = new CH2ShortT3PackageFilter;
+		break;
+	case PKG_H2LT3:
+		pstServerInfo->pPackageFilter = new CH2T3PackageFilter;
+		break;
+	default:
+		pstServerInfo->pPackageFilter = new CRawPackageFilter;
+
+	}
 
     return 0;
 
@@ -243,7 +261,6 @@ void CCommMgr::onUdpRead(int iFd,void *pData)
 
             stSession.dwBeginTime=lce::getTickCount();
             stSession.iFd=iFd;
-            stSession.iType=pstServerInfo->iType;
             stSession.iSvrId=pstServerInfo->iSrvId;
             stSession.stClientAddr=pstClientInfo->stClientAddr;
 
