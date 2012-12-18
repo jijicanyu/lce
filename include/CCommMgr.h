@@ -27,6 +27,7 @@ struct SSession
 	uint16_t getPort()	{	return ntohs(stClientAddr.sin_port);	}
 	int iSvrId;
 	int iFd;
+	void * pData;
 	struct sockaddr_in stClientAddr;
 	time_t dwBeginTime;
 	time_t getDelayTime()
