@@ -106,7 +106,7 @@ public:
 		//printf("onconnect id=%d\n",stSession.iFd);
 	}
 
-	void onError(char * szErrMsg)
+	void onError(SSession &stSession,char * szErrMsg)
 	{
 		cout<<szErrMsg<<endl;
 	}
