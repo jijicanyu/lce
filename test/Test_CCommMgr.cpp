@@ -16,6 +16,8 @@ using namespace lce;
 
 int iSrv1;
 
+
+
 struct SRequest
 {
     uint32_t dwReqId;
@@ -111,8 +113,13 @@ public:
 
 	void onTimer(uint32_t dwTimerId,void *pData)
 	{
-		CCommMgr::getInstance().addTimer(dwTimerId,2000,this,pData);
-		cout<<"dwCount="<<dwCount<<" dwOut="<<dwOutCount<<endl;
+
+		CCommMgr::getInstance().addTimer(dwTimerId,5000,this,pData);
+		CCommMgr::getInstance().addTimer(3,2000,this,pData);
+		CCommMgr::getInstance().addTimer(4,2000,this,pData);
+		CCommMgr::getInstance().delTimer(1);
+		CCommMgr::getInstance().delTimer(3);
+		cout<<dwTimerId<<" dwCount="<<dwCount<<" dwOut="<<dwOutCount<<endl;
 	}
 
 	
@@ -170,7 +177,7 @@ private:
 
 #pragma pack()
 
-
+CPackage<SHead> oPkg;
 
 
 
@@ -179,10 +186,19 @@ int main()
     //CH2ShortT3PackageFilter oCPackageFilter;
     //lce::initDaemon(); //后台运行
 
+	int a;
+	long b;
+	oPkg<<(int)2;
+	oPkg<<(uint64_t)3;
+	oPkg>>a;
+	oPkg>>b;
+
+	cout<<"a = "<<a<<" b ="<<b<<endl;
+
     CProCenter::getInstance().init(8,50000);
     CProCenter::getInstance().run();
 
-    if(CCommMgr::getInstance().init() < 0)
+    if(CCommMgr::getInstance().init(50000) < 0)
     {
         printf("%s\n",CCommMgr::getInstance().getErrMsg());
         return 0;
@@ -197,9 +213,9 @@ int main()
     }
 
 	CCommMgr::getInstance().setProcessor(iSrv1,&CProCenter::getInstance(),CCommMgr::PKG_HTTP);
-	CCommMgr::getInstance().setMaxClients(100000);
 
     CCommMgr::getInstance().addTimer(0,2000,&CProCenter::getInstance(),NULL);
+    CCommMgr::getInstance().addTimer(1,5000,&CProCenter::getInstance(),NULL);
     CCommMgr::getInstance().addSigHandler(SIGINT,&CProCenter::getInstance());
 
     CCommMgr::getInstance().start();

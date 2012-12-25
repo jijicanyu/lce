@@ -15,6 +15,7 @@
 #include "CShm.h"
 #include "CShmArray.h"
 #include "CShmHashMap.h"
+#include "CShmList.h"
 #include "CTask.h"
 #include "CThread.h"
 #include "CLog.h"

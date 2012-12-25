@@ -87,20 +87,29 @@ public:
 	}
 
 	//写数据
-	void write(const unsigned char* pszData,const unsigned short wLen)
+	void write(const unsigned char* pszData,const uint16_t wLen)
 	{
 		m_pkgData.append(reinterpret_cast<const char*>(pszData), wLen);
 	}
-	void write(const char* pszData,const unsigned short wLen)
+
+	void write(const char* pszData,const uint16_t wLen)
 	{
 		m_pkgData.append(pszData,wLen);
 	}
 
-	size_t write(const unsigned long dwVal)
+	size_t write(const uint64_t ddwVal)
 	{
 		size_t dwPos = m_pkgData.size();
-		unsigned long dwTmp = htonl(dwVal);
-		m_pkgData.append(reinterpret_cast<unsigned char*>(&dwTmp),sizeof(unsigned long));
+		uint64_t ddwTmp = htonll(ddwVal);
+		m_pkgData.append(reinterpret_cast<unsigned char*>(&ddwTmp),sizeof(uint64_t));
+		return dwPos;
+	}
+
+	size_t write(const uint32_t dwVal)
+	{
+		size_t dwPos = m_pkgData.size();
+		uint32_t dwTmp = htonl(dwVal);
+		m_pkgData.append(reinterpret_cast<unsigned char*>(&dwTmp),sizeof(uint32_t));
 		return dwPos;
 	}
 
@@ -119,9 +128,14 @@ public:
 		return dwPos;
 	}
 
-	void writePos(const unsigned long dwVal, const size_t dwPos){
+	void writePos(const uint64_t ddwVal, const size_t dwPos){
+		uint64_t ddwTmp = htonll(ddwVal) ;
+		m_pkgData.replace(dwPos, sizeof(uint64_t), reinterpret_cast<char*>(&ddwTmp),sizeof(uint64_t));
+	}
+
+	void writePos(const uint32_t dwVal, const size_t dwPos){
 		unsigned long dwTmp = htonl(dwVal) ;
-		m_pkgData.replace(dwPos, sizeof(unsigned long), reinterpret_cast<char*>(&dwTmp),sizeof(unsigned long));
+		m_pkgData.replace(dwPos, sizeof(uint32_t), reinterpret_cast<char*>(&dwTmp),sizeof(uint32_t));
 	}
 
 	void writePos(const unsigned short wVal, const size_t dwPos){
@@ -157,6 +171,21 @@ public:
 	}
 	#ifdef __x86_64__
 
+
+	this_type& operator << (const unsigned long long ddwVal)
+	{
+		unsigned long long ddwTmp = htonll(ddwVal);
+		m_pkgData.append(reinterpret_cast<char*>(&ddwTmp),sizeof(unsigned long long));
+		return *this;
+	}
+	this_type& operator << (const long long ddwVal)
+	{
+		long long ddwTmp = htonll(ddwVal);
+		m_pkgData.append(reinterpret_cast<char*>(&ddwTmp),sizeof(long long));
+		return *this;
+	}
+
+
 	this_type& operator << (const unsigned long dwVal)
 	{
 		unsigned long dwTmp = htonll(dwVal);
@@ -170,6 +199,20 @@ public:
 		return *this;
 	}
     #else
+
+	this_type& operator << (const unsigned long long ddwVal)
+	{
+		unsigned long long ddwTmp = htonll(ddwVal);
+		m_pkgData.append(reinterpret_cast<char*>(&ddwTmp),sizeof(unsigned long long));
+		return *this;
+	}
+	this_type& operator << (const long long ddwVal)
+	{
+		long long ddwTmp = htonll(ddwVal);
+		m_pkgData.append(reinterpret_cast<char*>(&ddwTmp),sizeof(long long));
+		return *this;
+	}
+
 
     this_type& operator << (const unsigned long dwVal)
 	{
@@ -197,28 +240,8 @@ public:
 		m_pkgData.append(reinterpret_cast<char*>(&uiTmp),sizeof(unsigned int));
 		return *this;
 	}
-	template<typename TVal>
-		this_type& operator << (const TVal& tVal)
-	{
-		m_pkgData.append(reinterpret_cast<const char*>(&tVal),sizeof(tVal));
-		return *this;
-	}
 
-	//读数据
-	template<typename TVal>
-	this_type& operator >> (TVal& tVal)
-	{
-		if (sizeof(tVal) <= (m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))
-		{
-			memcpy(&tVal,m_pkgData.data()+sizeof(PKG_HEAD)+m_iPos,sizeof(tVal));
-		}
-		else
-		{
-			throw Error("data error:no enough buf.");
-		}
-		m_iPos += static_cast<int>(sizeof(tVal));
-		return *this;
-	}
+	//=============读数据开始=================
 
 	this_type& operator >> (unsigned short& wVal)
 	{
@@ -248,6 +271,99 @@ public:
 		m_iPos += static_cast<int>(sizeof(short));
 		return *this;
 	}
+
+#ifdef __x86_64__
+
+	this_type& operator >> (unsigned long long& ddwVal)
+	{
+		if (sizeof(unsigned long long) <= (m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))
+		{
+			memcpy(&ddwVal,m_pkgData.data()+sizeof(PKG_HEAD)+m_iPos,sizeof(ddwVal));
+			ddwVal = ntohll(ddwVal);
+		}
+		else
+		{
+			throw Error("data error:no enough buf.");
+		}
+		m_iPos += static_cast<int>(sizeof(unsigned long long));
+		return *this;
+	}
+	this_type& operator >> (long long& ddwVal)
+	{
+		if (sizeof(long long) <= (m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))
+		{
+			memcpy(&ddwVal,m_pkgData.data()+sizeof(PKG_HEAD)+m_iPos,sizeof(ddwVal));
+			ddwVal = ntohll(ddwVal);
+		}
+		else
+		{
+			throw Error("data error:no enough buf.");
+		}
+		m_iPos += static_cast<int>(sizeof(long));
+		return *this;
+	}
+
+	this_type& operator >> (unsigned long& ddwVal)
+	{
+		if (sizeof(unsigned long) <= (m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))
+		{
+			memcpy(&ddwVal,m_pkgData.data()+sizeof(PKG_HEAD)+m_iPos,sizeof(ddwVal));
+			ddwVal = ntohll(ddwVal);
+		}
+		else
+		{
+			throw Error("data error:no enough buf.");
+		}
+		m_iPos += static_cast<int>(sizeof(unsigned long));
+		return *this;
+	}
+	this_type& operator >> (long& ddwVal)
+	{
+		if (sizeof(long) <= (m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))
+		{
+			memcpy(&ddwVal,m_pkgData.data()+sizeof(PKG_HEAD)+m_iPos,sizeof(ddwVal));
+			ddwVal = ntohll(ddwVal);
+		}
+		else
+		{
+			throw Error("data error:no enough buf.");
+		}
+		m_iPos += static_cast<int>(sizeof(long));
+		return *this;
+	}
+
+#else
+
+	this_type& operator >> (unsigned long long& ddwVal)
+	{
+		if (sizeof(unsigned long long) <= (m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))
+		{
+			memcpy(&ddwVal,m_pkgData.data()+sizeof(PKG_HEAD)+m_iPos,sizeof(ddwVal));
+			ddwVal = ntohll(ddwVal);
+		}
+		else
+		{
+			throw Error("data error:no enough buf.");
+		}
+		m_iPos += static_cast<int>(sizeof(unsigned long long));
+		return *this;
+	}
+	this_type& operator >> (long long& ddwVal)
+	{
+		if (sizeof(long long) <= (m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))
+		{
+			memcpy(&ddwVal,m_pkgData.data()+sizeof(PKG_HEAD)+m_iPos,sizeof(ddwVal));
+			ddwVal = ntohll(ddwVal);
+		}
+		else
+		{
+			throw Error("data error:no enough buf.");
+		}
+		m_iPos += static_cast<int>(sizeof(long));
+		return *this;
+	}
+
+
 	this_type& operator >> (unsigned long& dwVal)
 	{
 		if (sizeof(unsigned long) <= (m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))
@@ -276,6 +392,9 @@ public:
 		m_iPos += static_cast<int>(sizeof(long));
 		return *this;
 	}
+#endif
+
+
 	this_type& operator >> (unsigned int& uiVal)
 	{
 		if (sizeof(unsigned int) <= (m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))

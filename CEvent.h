@@ -12,6 +12,7 @@
 #include <string.h>
 #include <queue>
 #include <set>
+#include <map>
 #include <algorithm>
 #include <fcntl.h>
 
@@ -22,14 +23,16 @@ namespace lce
 typedef void (*fdEventCb)(int iFd,void *pData);
 typedef void (*timeEventCb)(uint32_t dwTimeId,void *pData);
 typedef void (*msgEventCb)(uint32_t dwMsgType,void *pData);
-const int EPOLL_MAX_SIZE = 500000;
+
 const int EPOLL_MAX_EVENT = 1024;
-const int EPOLL_WAIT_TIMEOUT = 1000;
-const int CEVENT_MAX_TIME_EVENT =500000;
+const int EPOLL_WAIT_TIMEOUT = 3000;
 
 class CEvent
 {
 public:
+
+	typedef map<uint32_t,uint64_t> MAP_TIME_INDEX;
+
     enum EventType
     {
         EV_DONE=0,
@@ -82,11 +85,11 @@ public:
     CEvent();
     ~CEvent();
 
-    int init();
+    int init(uint32_t dwMaxFdNum = 100000);
     int addFdEvent(int iWatchFd,int iEventType,fdEventCb pFdCb,void * pClientData);
     int delFdEvent(int iWatchFd,int iEventType);
 
-    int addTimer(uint32_t dwTimerId,uint64_t ddwExpire,timeEventCb pTimeCb,void * pClientData);
+    int addTimer(uint32_t dwTimerId,uint32_t dwExpire,timeEventCb pTimeCb,void * pClientData);
     int delTimer(uint32_t dwTimerId);
     int addMessage(uint32_t dwMsgType,msgEventCb pMsgCb,void * pClientData);
 
@@ -110,11 +113,11 @@ private:
     SEPollState m_stEPollState;
     queue <SMsgEvent *> m_queMsgEvents;
     multiset <STimeEvent*,cmpTimer> m_setSTimeEvents;
-    uint64_t m_szTimeEventIndexs[CEVENT_MAX_TIME_EVENT];
-    uint32_t m_dwTimerNum;
+	MAP_TIME_INDEX m_mapTimeEventIndexs;
     char m_szErrMsg[1024];
     bool m_bRun;
-	int dwCount;
+	bool m_bInit;
+	uint32_t m_dwMaxFdNum;
     pthread_mutex_t  m_lock;
 
 };
