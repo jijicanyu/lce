@@ -73,6 +73,8 @@ public:
 		ERR_INVALID_PACKAGE = 2,
 		ERR_MAX_CLIENT = 3,
 		ERR_NO_BUFFER = 4,
+		ERR_NOT_READY = 5,
+		ERR_SYSTEM = 6,
 	};
 
 private:

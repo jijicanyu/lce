@@ -385,10 +385,15 @@ void CCommMgr::onTcpRead(int iFd,void *pData)
 				pstServerInfo->pProcessor->onClose(stSession);
 			CCommMgr::getInstance().close(iFd);
 		}
+		else if(errno == EAGAIN || errno == EINTR) //处理连接正常，IO不正常情况，不关闭连接
+		{
+			snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"onTcpRead EAGAIN or EINTR %s,%d,errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
+			if (pstServerInfo->pProcessor != NULL)
+				pstServerInfo->pProcessor->onError(stSession,CCommMgr::getInstance().m_szErrMsg,ERR_NOT_READY);
+		}
 		else
 		{
 			snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"onTcpRead %s,%d,errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
-
 			CCommMgr::getInstance().close(iFd);
 			if (pstServerInfo->pProcessor != NULL)
 				pstServerInfo->pProcessor->onError(stSession,CCommMgr::getInstance().m_szErrMsg,ERR_SOCKET);
@@ -422,7 +427,7 @@ void CCommMgr::onAccept(int iFd,void *pData)
 
 		if (iClientSock < 0)
 		{
-			if(errno != EAGAIN) //Resource temporarily unavailable
+			if(errno != EAGAIN && errno != EINTR) //Resource temporarily unavailable
 			{
 				snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"onAccept %s,%d,accept errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
 
@@ -556,7 +561,7 @@ int CCommMgr::write(const SSession &stSession,const char* pszData, const int iSi
         }
         else
         {
-            if( errno == EAGAIN )
+            if( errno == EAGAIN ||errno == EINTR  )
             {
                 if(pstClientInfo->pSocketSendBuf == NULL)
                 {
@@ -585,7 +590,7 @@ int CCommMgr::write(const SSession &stSession,const char* pszData, const int iSi
         }
         else
         {
-            if (errno != EAGAIN)
+            if (errno != EAGAIN && errno != EINTR )
             {
                 snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
                 close(stSession.iFd);
@@ -622,7 +627,7 @@ int CCommMgr::write(const SSession &stSession,const char* pszData, const int iSi
             }
             else
             {
-                if( errno == EAGAIN )
+                if( errno == EAGAIN ||errno == EINTR )
                 {
                     pstClientInfo->pSocketSendBuf->addData(pszData,iSize);
                     m_oCEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CCommMgr::onWrite,pstClientInfo);
@@ -665,7 +670,7 @@ int CCommMgr::write(int iFd)
         }
         else
         {
-            if (errno != EAGAIN)
+            if (errno != EAGAIN && errno != EINTR )
             {
                 snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
                 close(iFd);
@@ -707,7 +712,7 @@ int CCommMgr::writeTo(const int iSrvId, const string& sIp, const uint16_t wPort,
 	}
 
 
-    if(lce::sendto(pstServerInfo->iFd,pszData,iSize,sIp,wPort)== -1)
+    if(lce::sendto(pstServerInfo->iFd,pszData,iSize,sIp,wPort) == -1)
     {
         snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
         return -1;
