@@ -113,7 +113,7 @@ int CEvent::init(uint32_t dwMaxFdNum /* = 100000 */)
 int CEvent::addFdEvent ( int iWatchFd, int iEventType, fdEventCb pFdCb,void * pClientData=NULL)
 {
 
-    if (iWatchFd >= (int)m_dwMaxFdNum)
+    if (iWatchFd >= (int)m_dwMaxFdNum || iWatchFd < 0)
     {
         snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d CEvent::addFdEvent too big iWathchFd error",__FILE__,__LINE__);
         return -1;
@@ -164,7 +164,7 @@ int CEvent::addFdEvent ( int iWatchFd, int iEventType, fdEventCb pFdCb,void * pC
   */
 int CEvent::delFdEvent(int iWatchFd, int iEventType)
 {
-    if (iWatchFd >= (int)m_dwMaxFdNum)
+    if (iWatchFd >= (int)m_dwMaxFdNum || iWatchFd < 0)
     {
         snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d CEvent::delFdEvent too big iWathchFd error",__FILE__,__LINE__);
         return -1;

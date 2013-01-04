@@ -67,6 +67,14 @@ public:
 
 	};
 
+	enum ERR_TYPE
+	{
+		ERR_SOCKET = 1,
+		ERR_INVALID_PACKAGE = 2,
+		ERR_MAX_CLIENT = 3,
+		ERR_NO_BUFFER = 4,
+	};
+
 private:
 
     struct SServerInfo

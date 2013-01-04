@@ -38,7 +38,7 @@ private:
 public:
 	
 
-    bool onRead(SSession &stSession,const char * pszData, const int iSize)
+    void onRead(SSession &stSession,const char * pszData, const int iSize)
     {
 
 		dwCount++;
@@ -106,7 +106,7 @@ public:
 		//printf("onconnect id=%d\n",stSession.iFd);
 	}
 
-	void onError(SSession &stSession,char * szErrMsg)
+	void onError(SSession &stSession,const char * szErrMsg,int iError)
 	{
 		cout<<szErrMsg<<endl;
 	}
