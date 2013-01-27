@@ -12,10 +12,11 @@
 #include <string.h>
 #include <queue>
 #include <set>
-#include <map>
+#include <hash_map>
 #include <algorithm>
 #include <fcntl.h>
 
+using namespace __gnu_cxx;
 using namespace std;
 
 namespace lce
@@ -31,7 +32,7 @@ class CEvent
 {
 public:
 
-	typedef map<uint32_t,uint64_t> MAP_TIME_INDEX;
+	typedef hash_map<uint32_t,uint64_t> MAP_TIME_INDEX;
 
     enum EventType
     {

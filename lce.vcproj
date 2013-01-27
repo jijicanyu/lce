@@ -321,6 +321,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CShmList.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CSocketBuf.h"
 				>
 			</File>

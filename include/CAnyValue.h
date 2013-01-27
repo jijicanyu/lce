@@ -959,7 +959,7 @@ private:
     {
 
         std::stringstream stream;
-        stream.precision(16);
+        stream.precision(20);
         stream<<t;
         return stream.str();
     }
@@ -1801,8 +1801,14 @@ private:
 
 public:
 
-	void decode(size_t &dwDecodePos,const unsigned char* pData, const size_t dwDataSize)
+	void decode(const unsigned char* pData, const size_t dwDataSize)
 	{
+		size_t dwDecodePos = 0;
+		this->decode(dwDecodePos,(char*)pData, dwDataSize);
+	}
+	void decode(const char* pData, const size_t dwDataSize)
+	{
+		size_t dwDecodePos = 0;
 		this->decode(dwDecodePos,(char*)pData, dwDataSize);
 	}
 
@@ -2058,7 +2064,7 @@ public:
             return ;
         }
 		size_t dwPos = sizeof(PKG_HEAD);
-        m_oAnyValues.decode(dwPos,pData,dwDataSize);
+        m_oAnyValues.decode(pData+dwPos,dwDataSize);
     }
 
 
