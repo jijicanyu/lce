@@ -8,7 +8,7 @@ const char * CHttpResponse::getStatusCodeDesc(const int iCode)
     switch(iCode)
     {
         case 100 : return "Continue";
-        case 101 : return "witching Protocols";
+        case 101 : return "Witching Protocols";
         case 200 : return "OK";
         case 201 : return "Created";
         case 202 : return "Accepted";

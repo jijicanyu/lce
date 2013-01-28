@@ -3,7 +3,7 @@
 
 #include <utility>
 #include <memory>
-#include <cassert>
+#include <string.h>
 using std::pair;
 
 namespace lce
@@ -22,14 +22,13 @@ namespace lce
 		SHashNode(){}
 		unsigned long dwKey;	//key
 		T  tVal;				//数据
-		size_t dwText;	//test 数据
 	};
 
 	//iterator
 	template<typename T>
 	class CHashMapIterator
 	{
-		//	friend class CHashMap<T>;
+
 	public:
 		typedef CHashMapIterator<T> _Self;
 	public:
@@ -64,33 +63,29 @@ namespace lce
 		typedef size_t size_type;
 		typedef ptrdiff_t defference_type;
 		typedef SHashNode<T> node_type;
-		typedef CHashMapIterator<T> Iterator;
+		typedef CHashMapIterator<T> iterator;
 	public:
 		inline CHashMap(void);
 		inline ~CHashMap(void);
 
-		inline bool init(const size_type dwMaxSize = 10000);
+		inline bool init(const size_type dwMaxSize = 12281);
 
 		inline bool empty() const;
 		inline bool full() const;
-		inline Iterator begin()
+		inline iterator begin()
 		{
 			return reinterpret_cast<SHashNode<T>*>(m_pListHead->pListNext);
 		}
-		inline Iterator end()	{	return reinterpret_cast<SHashNode<T>*>(m_pListHead);	}
-		inline pair<Iterator, bool> insert(const unsigned long dwKey,const T& tVal);
-		inline Iterator find(const unsigned long dwKey);
+		inline iterator end()	{	return reinterpret_cast<SHashNode<T>*>(m_pListHead);	}
+		inline pair<iterator, bool> insert(const unsigned long dwKey,const T& tVal);
+		inline iterator find(const unsigned long dwKey);
 
 		inline void erase(const unsigned long dwKey);
-		inline void erase(Iterator it);
+		inline void erase(iterator it);
 		inline void clear();
 
-		//test
-		inline void testEmptySize();
-		inline void testSize();
-
 		size_type size() const {	return m_dwSize;	}
-		size_type maxSize() const {	return m_dwMaxSize;	}
+		size_type max_size() const {	return m_dwMaxSize;	}
 		const char* getErrMsg() const {	return m_szErrMsg;	}
 	private:
 		inline void free(node_type* pNode);
@@ -160,7 +155,6 @@ namespace lce
 		//把内存连到空闲列表里
 		for (size_type i=0; i<dwMaxSize; ++i)
 		{
-			(m_pData+i)->dwText = i;
 			if (NULL == m_pEmpty)
 			{
 				(m_pData+i)->pHashNext = NULL;
@@ -216,8 +210,6 @@ namespace lce
 	template<typename T>
 	void CHashMap<T>::removeList(node_type* pNode)
 	{
-		assert(pNode->pListNext != pNode);
-		assert(pNode->pListPre != pNode);
 
 		pNode->pListNext->pListPre = pNode->pListPre;
 		pNode->pListPre->pListNext = pNode->pListNext;
@@ -244,7 +236,7 @@ namespace lce
 		}
 		else
 		{
-			//		xsnprintf(m_szErrMsg,sizeof(m_szErrMsg),"no space.");
+			//snprintf(m_szErrMsg,sizeof(m_szErrMsg),"no space.");
 		}
 		return pNode;
 	}
@@ -252,7 +244,7 @@ namespace lce
 	template<typename T>
 	void CHashMap<T>::free(node_type* pNode)
 	{
-		this->RemoveList(pNode);
+		this->removeList(pNode);
 		memset(pNode,0,sizeof(node_type));
 		if (NULL == m_pEmpty)
 		{
@@ -321,7 +313,7 @@ namespace lce
 	CHashMapIterator<T> CHashMap<T>::find(const unsigned long dwKey)
 	{
 		SHashNodeBase* pVal = m_pListHead;
-		size_type dwHashPos = this->GetHashPos(dwKey);
+		size_type dwHashPos = this->getHashPos(dwKey);
 		SHashNodeBase* pHeadNode = m_pHashTable+dwHashPos;
 		SHashNodeBase* pTmpNode = pHeadNode->pHashNext;
 		while (pHeadNode != pTmpNode)
@@ -348,7 +340,7 @@ namespace lce
 			{
 				pTmpNode->pHashNext->pHashPre = pTmpNode->pHashPre;
 				pTmpNode->pHashPre->pHashNext = pTmpNode->pHashNext;
-				this->Free(reinterpret_cast<node_type*>(pTmpNode));
+				this->free(reinterpret_cast<node_type*>(pTmpNode));
 				break;
 			}
 			pTmpNode = pTmpNode->pHashNext;
@@ -356,14 +348,14 @@ namespace lce
 	}
 
 	template<typename T>
-	void CHashMap<T>::erase(Iterator it)
+	void CHashMap<T>::erase(iterator it)
 	{
-		if (it != this->End())
+		if (it != this->end())
 		{
 			SHashNodeBase* pTmpNode = it.m_pValue;
 			pTmpNode->pHashNext->pHashPre = pTmpNode->pHashPre;
 			pTmpNode->pHashPre->pHashNext = pTmpNode->pHashNext;
-			this->Free(reinterpret_cast<node_type*>(pTmpNode));
+			this->free(reinterpret_cast<node_type*>(pTmpNode));
 		}
 	}
 
@@ -401,73 +393,14 @@ namespace lce
 	template<typename T>
 	bool CHashMap<T>::empty() const
 	{
-#ifndef NDEBUG
-		if (m_pListHead->pListNext == m_pListHead)
-		{
-			assert(m_dwSize == 0);
-		}
-		else
-		{
-			assert(m_dwSize != 0);
-		}
-#endif
-
 		return m_pListHead->pListNext == m_pListHead ? true : false;
 	}
 
 	template<typename T>
 	bool CHashMap<T>::full() const
 	{
-#ifndef NDEBUG
-		if (m_pEmpty == NULL)
-		{
-			assert(m_dwSize == m_dwMaxSize);
-		}
-		else
-		{
-			assert(m_dwSize != m_dwMaxSize);
-		}
-#endif
 		return m_pEmpty == NULL ? true : false;
 	}
-
-	//test
-	template<typename T>
-	void CHashMap<T>::testEmptySize()
-	{
-#ifndef NDEBUG
-		size_type tmpSize = 0;
-
-		SHashNodeBase* pTmpEmptyHead = reinterpret_cast<SHashNodeBase*>(m_pEmpty);
-
-		while(pTmpEmptyHead)
-		{
-			tmpSize++;
-			pTmpEmptyHead = pTmpEmptyHead->pListNext;
-		}
-
-		assert(tmpSize == m_dwMaxSize-m_dwSize);
-#endif
-	}
-
-	template<typename T>
-	void CHashMap<T>::testSize()
-	{
-#ifndef NDEBUG
-		size_type tmpSize = 0;
-
-		SHashNodeBase* pTmpListHead = m_pListHead;
-
-		while(pTmpListHead->pListNext != m_pListHead)
-		{
-			tmpSize++;
-			pTmpListHead = pTmpListHead->pListNext;
-		}
-
-		assert(tmpSize == m_dwSize);
-#endif
-	}
-
 
 	//////////////////////////////////////////////////////////////////////////
 	//HashMap iterator
@@ -476,6 +409,7 @@ namespace lce
 	CHashMapIterator<T>::CHashMapIterator()
 		:m_pValue(NULL)
 	{
+
 	}
 
 	template<typename T>

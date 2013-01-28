@@ -25,7 +25,7 @@ liblce.a:$(OBJECT)
 install:
 
 	cp *.h include
-	cp liblce.a lib
+	cp liblce.a lib/
 
 uninstall:
 

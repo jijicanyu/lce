@@ -379,6 +379,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\test\test_hashmap.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\test\Test_shm.cpp"
 				>
 			</File>
