@@ -321,6 +321,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CShmList.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CSocketBuf.h"
 				>
 			</File>
@@ -346,6 +350,42 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
+		</Filter>
+		<Filter
+			Name="test"
+			>
+			<File
+				RelativePath=".\test\Test_CAnyValue.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\test\Test_CCommMgr.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\test\Test_CEvent.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\test\Test_Connector.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\test\Test_CTask.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\test\Test_CThread.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\test\Test_shm.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\test\Test_shm2.cpp"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>

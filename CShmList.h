@@ -40,7 +40,7 @@ typedef unsigned long size_type;
 		unsigned long dwEmptyHeadOffset;		//empty list head
 		unsigned long dwUseHeadOffset;
 		size_type dwShmKey;				//shm key
-		char szReserve[1020];
+		char szReserve[64];
 	};
 #pragma pack()
 
