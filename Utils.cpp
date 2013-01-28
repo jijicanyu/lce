@@ -154,16 +154,6 @@ std::string& trimString(std::string& sSource)
     return sSource;
 }
 
-void ignorePipe(void)
-{
-    struct sigaction sig;
-    sig.sa_handler = SIG_IGN;
-    sig.sa_flags = 0;
-    sigemptyset(&sig.sa_mask);
-    //防止向关闭的fd写数据，产生sigpipe信号使程序退出
-    sigaction(SIGPIPE,&sig,NULL);
-}
-
 void initDaemon()
 {
     pid_t pid;
@@ -179,9 +169,15 @@ void initDaemon()
     signal(SIGCHLD, SIG_IGN);
     signal(SIGTERM, SIG_IGN);
     signal(SIGIO,   SIG_IGN);
-    ignorePipe();
 
-    if ((pid = fork()) != 0)
+	struct sigaction sig;
+	sig.sa_handler = SIG_IGN;
+	sig.sa_flags = 0;
+	sigemptyset(&sig.sa_mask);
+	//防止向异常的fd写数据，产生sigpipe信号使程序退出
+	sigaction(SIGPIPE,&sig,NULL);
+
+    if ((pid = fork()) != 0) //1次fork脱离控制终端，2次防止自己创建控制终端
         exit(0);
     umask(0);
 }
@@ -539,7 +535,7 @@ std::string formUrlDecode(const std::string &sSrc)
         }
         else if (ch == '%')
         {
-            char szTmpStr[] = "0x0__";
+            char szTmpStr[] = "0x000";
             int iChNum;
             szTmpStr[3] = sSrc.at(j+1);
             szTmpStr[4] = sSrc.at(j+2);

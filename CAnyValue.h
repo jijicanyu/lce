@@ -321,27 +321,7 @@ public:
         m_value.integer = shValue;
     }
 
-#ifdef __x86_64__
 
-    CAnyValue(const long lValue)
-        :m_ucType(DType::Integer)
-        ,m_ucSubType(DType::Integer8)
-        ,m_bInit(false)
-        ,m_bHasData(lValue==0?false:true)
-    {
-        init();
-        m_value.integer = lValue;
-    }
-    CAnyValue(const unsigned long dwValue)
-        :m_ucType(DType::Integer)
-        ,m_ucSubType(DType::Integer8)
-        ,m_bInit(false)
-        ,m_bHasData(dwValue==0?false:true)
-    {
-        init();
-        m_value.integer = dwValue;
-    }
-#else
     CAnyValue(const long lValue)
         :m_ucType(DType::Integer)
         ,m_ucSubType(DType::Integer4)
@@ -361,7 +341,6 @@ public:
         m_value.integer = dwValue;
     }
 
-#endif
 
     CAnyValue(const int iValue)
         :m_ucType(DType::Integer)
@@ -2069,7 +2048,6 @@ public:
 
         if ( dwDataSize < sizeof(PKG_HEAD) )
         {
-            assert(false);
             throw Error("decode error:dwDataSize < sizeof(PKG_HEAD)");
         }
         m_oAnyValues.clear();
@@ -2095,7 +2073,6 @@ public:
 
 		if ( dwDataSize < sizeof(PKG_HEAD) )
 		{
-			assert(false);
 			throw Error("decode error:dwDataSize < sizeof(PKG_HEAD)");
 		}
 		m_oAnyValues.clear();

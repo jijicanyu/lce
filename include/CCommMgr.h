@@ -19,6 +19,8 @@ using namespace std;
 namespace lce
 {
 
+const float MAGIC_FD_TIMES =  1.5;
+
 struct SSession
 {
 	SSession(){		memset(this,0,sizeof(SSession));	}
@@ -65,6 +67,14 @@ public:
 
 	};
 
+	enum ERR_TYPE
+	{
+		ERR_SOCKET = 1,
+		ERR_INVALID_PACKAGE = 2,
+		ERR_MAX_CLIENT = 3,
+		ERR_NO_BUFFER = 4,
+	};
+
 private:
 
     struct SServerInfo
@@ -73,11 +83,16 @@ private:
         {
             pProcessor=NULL;
             pPackageFilter=NULL;
+			iPkgType = 0;
+			iFd = 0;
+			iSrvId = 0;
+			iType = 0;
         }
         int iSrvId;
         int iFd;
         string sIp;
         uint16_t wPort;
+		int iPkgType;
 		CProcessor *pProcessor;
         uint32_t dwInitRecvBufLen;
         uint32_t dwMaxRecvBufLen;
@@ -114,24 +129,23 @@ private:
 	};
 
 public:
-    int init()
+    int init(uint32_t dwMaxClient = 5000)
     {
-        if(m_oCEvent.init()< 0)
+        if(m_oCEvent.init(dwMaxClient * MAGIC_FD_TIMES)< 0)
         {
             snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
             return -1;
         }
-		m_dwMaxClient = 5000;
+		m_dwMaxClient = dwMaxClient;
 		m_dwClientNum = 0;
-        m_vecClients.resize(EPOLL_MAX_SIZE,0);
+        m_vecClients.resize(dwMaxClient * MAGIC_FD_TIMES,0);
         return 0;
     }
 
     int createSrv(int iType,const string &sIp,uint16_t wPort,uint32_t dwInitRecvBufLen =10240,uint32_t dwMaxRecvBufLen=102400,uint32_t dwInitSendBufLen=102400,uint32_t dwMaxSendBufLen=1024000);
     int createAsyncConn(uint32_t dwInitRecvBufLen =10240,uint32_t dwMaxRecvBufLen=102400,uint32_t dwInitSendBufLen=102400,uint32_t dwMaxSendBufLen=1024000);
     int setProcessor(int iSrvId,CProcessor * pProcessor,int iPkgType = 0);
-
-	void setMaxClients(uint32_t dwMaxClient){ m_dwMaxClient = dwMaxClient ;}
+	int rmSrv(int iSrvId);
 
 
     int close(const SSession &stSession);
@@ -150,6 +164,8 @@ public:
 
     int start();
     int stop();
+	
+
     int sendMessage(uint32_t dwMsgType,CProcessor * pProcessor,void* pData = NULL);
 
     const char * getErrMsg(){ return m_szErrMsg;}

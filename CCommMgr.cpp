@@ -57,8 +57,15 @@ int CCommMgr::createSrv(int iType,const string &sIp,uint16_t wPort,uint32_t dwIn
         }
 
         pstServerInfo->iFd=iFd;
-    }
 
+		if(m_oCEvent.addFdEvent(pstServerInfo->iFd,CEvent::EV_READ,CCommMgr::onAccept,pstServerInfo) < 0 )
+		{
+			snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,m_oCEvent.getErrorMsg());
+			lce::close(iFd);
+			delete pstServerInfo;
+			return -1;
+		}
+    }
     else if(iType == SRV_UDP)
     {
         int iFd=createUdpSock();
@@ -80,9 +87,17 @@ int CCommMgr::createSrv(int iType,const string &sIp,uint16_t wPort,uint32_t dwIn
             return -1;
         }
 
-        pstServerInfo->iFd=iFd;
-    }
+		if(m_oCEvent.addFdEvent(pstServerInfo->iFd,CEvent::EV_READ,CCommMgr::onUdpRead,pstServerInfo) < 0 )
+		{
+			snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,m_oCEvent.getErrorMsg());
+			lce::close(iFd);
+			delete pstServerInfo;
+			return -1;
+		}
 
+        pstServerInfo->iFd=iFd;
+
+    }
 
     pstServerInfo->iSrvId=m_vecServers.size();
     m_vecServers.push_back(pstServerInfo);
@@ -126,6 +141,7 @@ int CCommMgr::setProcessor(int iSrvId,CProcessor *pProcessor,int iPkgType)
         snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,iSrvId error",__FILE__,__LINE__);
         return -1;
     }
+
 	if(pProcessor == NULL)
 	{
 		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,process pointer is null",__FILE__,__LINE__);
@@ -133,23 +149,35 @@ int CCommMgr::setProcessor(int iSrvId,CProcessor *pProcessor,int iPkgType)
 	}
 
     SServerInfo * pstServerInfo=m_vecServers[iSrvId];
+
+	if (pstServerInfo == NULL)
+	{
+		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,iSrvId error",__FILE__,__LINE__);
+		return -1;
+	}
+
 	pstServerInfo->pProcessor = pProcessor;
 
 	switch(iPkgType)
 	{
 	case PKG_RAW:
+		pstServerInfo->iPkgType = iPkgType;
 		pstServerInfo->pPackageFilter = new CRawPackageFilter;
 		break;
 	case PKG_HTTP:
+		pstServerInfo->iPkgType = iPkgType;
 		pstServerInfo->pPackageFilter = new CHttpPackageFilter;
 		break;
 	case PKG_H2ST3:
+		pstServerInfo->iPkgType = iPkgType;
 		pstServerInfo->pPackageFilter = new CH2ShortT3PackageFilter;
 		break;
 	case PKG_H2LT3:
+		pstServerInfo->iPkgType = iPkgType;
 		pstServerInfo->pPackageFilter = new CH2T3PackageFilter;
 		break;
 	default:
+		pstServerInfo->iPkgType = PKG_RAW;
 		pstServerInfo->pPackageFilter = new CRawPackageFilter;
 
 	}
@@ -181,11 +209,16 @@ void CCommMgr::onUdpRead(int iFd,void *pData)
 
     if ( CCommMgr::getInstance().m_vecClients[iFd] == NULL)
     {
-        pstClientInfo=new SClientInfo;
-        CCommMgr::getInstance().m_vecClients[iFd]=pstClientInfo;
+        CCommMgr::getInstance().m_vecClients[iFd] = new SClientInfo;
     }
-    else
-        pstClientInfo=CCommMgr::getInstance().m_vecClients[iFd];
+
+    pstClientInfo=CCommMgr::getInstance().m_vecClients[iFd];
+
+	SSession stSession;
+	stSession.dwBeginTime = lce::getTickCount();
+	stSession.iFd = iFd;
+	stSession.iSvrId = pstServerInfo->iSrvId;
+
 
     int iAddrLen = sizeof(struct sockaddr_in);
 
@@ -208,36 +241,30 @@ void CCommMgr::onUdpRead(int iFd,void *pData)
     {
         //print error no buf size
         pstClientInfo->pSocketRecvBuf->reset();
-        snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"%s,%d,socket buf no memory",__FILE__,__LINE__);
+        snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"onUdpRead %s,%d,socket buf no memory",__FILE__,__LINE__);
         if (pstServerInfo->pProcessor != NULL)
-            pstServerInfo->pProcessor->onError(CCommMgr::getInstance().m_szErrMsg);
+            pstServerInfo->pProcessor->onError(stSession,CCommMgr::getInstance().m_szErrMsg,ERR_NO_BUFFER);
         return;
     }
 
     iSize=::recvfrom(iFd,pstClientInfo->pSocketRecvBuf->getFreeBuf(),pstClientInfo->pSocketRecvBuf->getFreeSize(),0,(struct sockaddr *) &pstClientInfo->stClientAddr,(socklen_t *)&iAddrLen);
+   
+	stSession.stClientAddr=pstClientInfo->stClientAddr;
 
     if(iSize > 0 )
     {
         pstClientInfo->pSocketRecvBuf->addData(iSize);
 
         int iWholePkgFlag = 0;
-        SSession stSession;
         int iRealPkgLen = 0;
         int iPkgLen = 0;
 
         while ( (iWholePkgFlag = pstServerInfo->pPackageFilter->isWholePkg(pstClientInfo->pSocketRecvBuf->getData(), pstClientInfo->pSocketRecvBuf->getSize(), iRealPkgLen, iPkgLen)) == 0 )
         {
 
-            //const char* pRealPkgData = pstServerInfo->pPackageFilter->getRealPkgData(pstClientInfo->pSocketRecvBuf->getData(), pstClientInfo->pSocketRecvBuf->getSize());
-
-            stSession.dwBeginTime=lce::getTickCount();
-            stSession.iFd=iFd;
-            stSession.iSvrId=pstServerInfo->iSrvId;
-            stSession.stClientAddr=pstClientInfo->stClientAddr;
-
-            //pstServerInfo->pProcessor->onRead(stSession,pRealPkgData,iRealPkgLen);
             if (pstServerInfo->pProcessor != NULL)
                 pstServerInfo->pProcessor->onRead(stSession,pstClientInfo->pSocketRecvBuf->getData(),iPkgLen);
+
             pstClientInfo->pSocketRecvBuf->reset();
             break;
         }
@@ -245,18 +272,19 @@ void CCommMgr::onUdpRead(int iFd,void *pData)
 
         if ( -2 == iWholePkgFlag || -1 == iWholePkgFlag)//非法数据包
         {
+
             pstClientInfo->pSocketRecvBuf->reset();
-            snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"%s,%d,package invalid,errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
+            snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"onUdpRead %s,%d,package invalid,errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
             if (pstServerInfo->pProcessor != NULL)
-                pstServerInfo->pProcessor->onError(CCommMgr::getInstance().m_szErrMsg);
+                pstServerInfo->pProcessor->onError(stSession,CCommMgr::getInstance().m_szErrMsg,ERR_INVALID_PACKAGE);
         }
     }
     else
     {
         pstClientInfo->pSocketRecvBuf->reset();
-        snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"%s,%d,errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
+        snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"onUdpRead %s,%d,errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
         if (pstServerInfo->pProcessor != NULL)
-            pstServerInfo->pProcessor->onError(CCommMgr::getInstance().m_szErrMsg);
+            pstServerInfo->pProcessor->onError(stSession,CCommMgr::getInstance().m_szErrMsg,ERR_SOCKET);
     }
 
 }
@@ -275,6 +303,13 @@ void CCommMgr::onTcpRead(int iFd,void *pData)
 
     SServerInfo *pstServerInfo = CCommMgr::getInstance().m_vecServers[pstClientInfo->iSrvId];
 
+
+	SSession stSession;
+	stSession.dwBeginTime=lce::getTickCount();
+	stSession.iFd=iFd;
+	stSession.iSvrId=pstServerInfo->iSrvId;
+	stSession.stClientAddr=pstClientInfo->stClientAddr;
+
     if (pstClientInfo->pSocketRecvBuf == NULL)
     {
         pstClientInfo->pSocketRecvBuf=new CSocketBuf(pstServerInfo->dwInitRecvBufLen,pstServerInfo->dwMaxRecvBufLen);
@@ -291,33 +326,29 @@ void CCommMgr::onTcpRead(int iFd,void *pData)
     {
         //print error no buf size
         CCommMgr::getInstance().close(iFd);
-        snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"%s,%d,socket buf no memory",__FILE__,__LINE__);
+        snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"onTcpRead %s,%d,socket buf no memory",__FILE__,__LINE__);
 
 		if (pstServerInfo->pProcessor != NULL)
-			return pstServerInfo->pProcessor->onError(CCommMgr::getInstance().m_szErrMsg);
+			return pstServerInfo->pProcessor->onError(stSession,CCommMgr::getInstance().m_szErrMsg,ERR_NO_BUFFER);
 
     }
 
     iSize=::recv(iFd,pstClientInfo->pSocketRecvBuf->getFreeBuf(),pstClientInfo->pSocketRecvBuf->getFreeSize(),0);
+
+
 
     if(iSize > 0 )
     {
         pstClientInfo->pSocketRecvBuf->addData(iSize);
 
         int iWholePkgFlag = 0;
-        SSession stSession;
+
         int iRealPkgLen = 0;
         int iPkgLen = 0;
 
         while ( (iWholePkgFlag = pstServerInfo->pPackageFilter->isWholePkg(pstClientInfo->pSocketRecvBuf->getData(), pstClientInfo->pSocketRecvBuf->getSize(), iRealPkgLen, iPkgLen)) == 0 )
         {
 
-            //const char* pRealPkgData = pstServerInfo->pPackageFilter->getRealPkgData(pstClientInfo->pSocketRecvBuf->getData(), pstClientInfo->pSocketRecvBuf->getSize());
-
-            stSession.dwBeginTime=lce::getTickCount();
-            stSession.iFd=iFd;
-            stSession.iSvrId=pstServerInfo->iSrvId;
-            stSession.stClientAddr=pstClientInfo->stClientAddr;
             if (pstServerInfo->pProcessor != NULL)
                 pstServerInfo->pProcessor->onRead(stSession,pstClientInfo->pSocketRecvBuf->getData(),iPkgLen);
 
@@ -331,32 +362,43 @@ void CCommMgr::onTcpRead(int iFd,void *pData)
 
         if ( -2 == iWholePkgFlag )//非法数据包
         {
-            CCommMgr::getInstance().close(iFd);
-            snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"%s,%d,package invalid",__FILE__,__LINE__);
+            //CCommMgr::getInstance().close(iFd);//非法数据包时，不关闭连接，而是重置接收缓冲区，是否关闭连接让上层处理
+			pstClientInfo->pSocketRecvBuf->reset();
+            snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"onTcpRead %s,%d,package invalid",__FILE__,__LINE__);
             if (pstServerInfo->pProcessor != NULL)
-                pstServerInfo->pProcessor->onError(CCommMgr::getInstance().m_szErrMsg);
+                pstServerInfo->pProcessor->onError(stSession,CCommMgr::getInstance().m_szErrMsg,ERR_INVALID_PACKAGE);
         }
     }
     else if(iSize == 0)
     {
 
-
-        SSession stSession;
-        stSession.dwBeginTime=lce::getTickCount();
-        stSession.iFd=iFd;
-        stSession.iSvrId=pstServerInfo->iSrvId;
-        stSession.stClientAddr=pstClientInfo->stClientAddr;
         if (pstServerInfo->pProcessor != NULL)
             pstServerInfo->pProcessor->onClose(stSession);
         CCommMgr::getInstance().close(iFd);
     }
     else
     {
-        snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"%s,%d,errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
 
-        CCommMgr::getInstance().close(iFd);
-        if (pstServerInfo->pProcessor != NULL)
-            pstServerInfo->pProcessor->onError(CCommMgr::getInstance().m_szErrMsg);
+		if( errno == 104) //Connection reset by peer
+		{
+			if (pstServerInfo->pProcessor != NULL)
+				pstServerInfo->pProcessor->onClose(stSession);
+			CCommMgr::getInstance().close(iFd);
+		}
+		else if(errno == EAGAIN || errno == EINTR) //处理连接正常，IO不正常情况，不关闭连接
+		{
+			snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"onTcpRead EAGAIN or EINTR %s,%d,errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
+			if (pstServerInfo->pProcessor != NULL)
+				pstServerInfo->pProcessor->onError(stSession,CCommMgr::getInstance().m_szErrMsg,ERR_NOT_READY);
+		}
+		else
+		{
+			snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"onTcpRead %s,%d,errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
+			CCommMgr::getInstance().close(iFd);
+			if (pstServerInfo->pProcessor != NULL)
+				pstServerInfo->pProcessor->onError(stSession,CCommMgr::getInstance().m_szErrMsg,ERR_SOCKET);
+		}
+
     }
 
 }
@@ -367,58 +409,66 @@ void CCommMgr::onAccept(int iFd,void *pData)
 
     SServerInfo *pstServerInfo=(SServerInfo *)pData;
 
-    SClientInfo *pstClientInfo=new SClientInfo;
+	if (pstServerInfo == NULL) return;
 
-    int iAddrLen = sizeof(struct sockaddr_in);
-
-    pstClientInfo->iSrvId=pstServerInfo->iSrvId;
-
-
-    int iClientSock=accept(iFd, (struct sockaddr *) &pstClientInfo->stClientAddr,(socklen_t *)&iAddrLen);
-    CCommMgr::getInstance().m_oCEvent.addFdEvent(iClientSock,CEvent::EV_READ,CCommMgr::onTcpRead,pstClientInfo);
-
-	if(CCommMgr::getInstance().m_dwClientNum > CCommMgr::getInstance().m_dwMaxClient)
+	while(true) //循环接受请求，减小epoll软中断次数，提高性能
 	{
-		snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"%s,%d,max clients errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
+		SClientInfo *pstClientInfo=new SClientInfo;
 
-		if (pstServerInfo->pProcessor != NULL)
-			pstServerInfo->pProcessor->onError(CCommMgr::getInstance().m_szErrMsg);
+		int iAddrLen = sizeof(struct sockaddr_in);
 
-		lce::close(iClientSock);
-		delete pstClientInfo;
-		pstClientInfo = NULL;
-		return;
+		SSession stSession;
+		stSession.dwBeginTime=lce::getTickCount();
+		stSession.iSvrId=pstServerInfo->iSrvId;
+
+		pstClientInfo->iSrvId=pstServerInfo->iSrvId;
+
+		int iClientSock=accept(iFd, (struct sockaddr *) &pstClientInfo->stClientAddr,(socklen_t *)&iAddrLen);
+
+		if (iClientSock < 0)
+		{
+			if(errno != EAGAIN && errno != EINTR) //Resource temporarily unavailable
+			{
+				snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"onAccept %s,%d,accept errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
+
+				if (pstServerInfo->pProcessor != NULL)
+					pstServerInfo->pProcessor->onError(stSession,CCommMgr::getInstance().m_szErrMsg,ERR_SOCKET);
+			}
+
+			lce::close(iClientSock);
+			delete pstClientInfo;
+			pstClientInfo = NULL;
+			break;
+		}
+
+		if(CCommMgr::getInstance().m_dwClientNum > CCommMgr::getInstance().m_dwMaxClient)
+		{
+			snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"onAccept %s,%d,max clients errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
+
+			if (pstServerInfo->pProcessor != NULL)
+				pstServerInfo->pProcessor->onError(stSession,CCommMgr::getInstance().m_szErrMsg,ERR_MAX_CLIENT);
+
+			lce::close(iClientSock);
+			delete pstClientInfo;
+			pstClientInfo = NULL;
+			break;
+		}
+
+		pstClientInfo->iFd=iClientSock;
+
+		CCommMgr::getInstance().m_dwClientNum++;
+		CCommMgr::getInstance().m_vecClients[iClientSock]=pstClientInfo;
+
+		lce::setNCloseWait(iClientSock);
+		lce::setNBlock(iClientSock);
+
+		stSession.iFd=iClientSock;
+		stSession.stClientAddr=pstClientInfo->stClientAddr;
+
+		if (pstServerInfo->pProcessor)   pstServerInfo->pProcessor->onConnect(stSession,true);
+
+		CCommMgr::getInstance().m_oCEvent.addFdEvent(iClientSock,CEvent::EV_READ,CCommMgr::onTcpRead,pstClientInfo);
 	}
-
-    if (iClientSock < 0)
-    {
-        snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"%s,%d,accept errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
-        
-		if (pstServerInfo->pProcessor != NULL)
-			pstServerInfo->pProcessor->onError(CCommMgr::getInstance().m_szErrMsg);
-
-        lce::close(iClientSock);
-        delete pstClientInfo;
-		pstClientInfo = NULL;
-        return;
-    }
-
-	CCommMgr::getInstance().m_dwClientNum++;
-
-    CCommMgr::getInstance().m_vecClients[iClientSock]=pstClientInfo;
-
-    pstClientInfo->iFd=iClientSock;
-    lce::setNCloseWait(iClientSock);
-    lce::setNBlock(iClientSock);
-
-    SSession stSession;
-    stSession.dwBeginTime=lce::getTickCount();
-    stSession.iFd=iClientSock;
-    stSession.iSvrId=pstServerInfo->iSrvId;
-    stSession.stClientAddr=pstClientInfo->stClientAddr;
-
-
-    if (pstServerInfo->pProcessor)   pstServerInfo->pProcessor->onConnect(stSession,true);
 
 }
 
@@ -477,6 +527,7 @@ int CCommMgr::write(const SSession &stSession,const char* pszData, const int iSi
 
     SServerInfo * pstServerInfo=m_vecServers[stSession.iSvrId];
 
+
     pstClientInfo->bNeedClose=bClose;
     int iSendBufSize = 0 ;
     int iSendSize = 0;
@@ -510,7 +561,7 @@ int CCommMgr::write(const SSession &stSession,const char* pszData, const int iSi
         }
         else
         {
-            if( errno == EAGAIN )
+            if( errno == EAGAIN ||errno == EINTR  )
             {
                 if(pstClientInfo->pSocketSendBuf == NULL)
                 {
@@ -539,7 +590,7 @@ int CCommMgr::write(const SSession &stSession,const char* pszData, const int iSi
         }
         else
         {
-            if (errno != EAGAIN)
+            if (errno != EAGAIN && errno != EINTR )
             {
                 snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
                 close(stSession.iFd);
@@ -576,7 +627,7 @@ int CCommMgr::write(const SSession &stSession,const char* pszData, const int iSi
             }
             else
             {
-                if( errno == EAGAIN )
+                if( errno == EAGAIN ||errno == EINTR )
                 {
                     pstClientInfo->pSocketSendBuf->addData(pszData,iSize);
                     m_oCEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CCommMgr::onWrite,pstClientInfo);
@@ -599,6 +650,14 @@ int CCommMgr::write(int iFd)
     SClientInfo * pstClientInfo=m_vecClients[iFd];
     SServerInfo * pstServerInfo=m_vecServers[pstClientInfo->iSrvId];
 
+	SSession stSession;
+	stSession.dwBeginTime = lce::getTickCount();
+	stSession.stClientAddr = pstClientInfo->stClientAddr;
+	stSession.iFd = iFd;
+	stSession.iSvrId = pstServerInfo->iSrvId;
+
+
+
     int iSendBufSize=pstClientInfo->pSocketSendBuf->getSize();
 
     if(iSendBufSize > 0)
@@ -611,12 +670,12 @@ int CCommMgr::write(int iFd)
         }
         else
         {
-            if (errno != EAGAIN)
+            if (errno != EAGAIN && errno != EINTR )
             {
                 snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
                 close(iFd);
                 if (pstServerInfo->pProcessor != NULL)
-                    pstServerInfo->pProcessor->onError(CCommMgr::getInstance().m_szErrMsg);
+                    pstServerInfo->pProcessor->onError(stSession,CCommMgr::getInstance().m_szErrMsg,ERR_SOCKET);
                 return -1;
             }
         }
@@ -634,7 +693,7 @@ int CCommMgr::write(int iFd)
 }
 
 
-int CCommMgr::writeTo(const int iSrvId, const string& sIp, const uint16_t wPort, const char* pszData, const int iSize)
+int CCommMgr::writeTo(const int iSrvId, const string& sIp, const uint16_t wPort,const char* pszData, const int iSize)
 {
 
     if( iSrvId <0 || iSrvId >(int) m_vecServers.size()-1)
@@ -646,7 +705,14 @@ int CCommMgr::writeTo(const int iSrvId, const string& sIp, const uint16_t wPort,
 
     SServerInfo * pstServerInfo=m_vecServers[iSrvId];
 
-    if(lce::sendto(pstServerInfo->iFd,pszData,iSize,sIp,wPort)== -1)
+	if (pstServerInfo == NULL)
+	{
+		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,iSrvId error",__FILE__,__LINE__);
+		return -1;
+	}
+
+
+    if(lce::sendto(pstServerInfo->iFd,pszData,iSize,sIp,wPort) == -1)
     {
         snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
         return -1;
@@ -700,6 +766,11 @@ int CCommMgr::connect(int iSrvId,const string &sIp,uint16_t wPort)
 
     SServerInfo * pstServerInfo=m_vecServers[iSrvId];
 
+	if (pstServerInfo == NULL)
+	{
+		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,iSrvId error",__FILE__,__LINE__);
+		return -1;
+	}
 
     if(pstServerInfo->iType == CONN_TCP)
     {
@@ -890,30 +961,41 @@ void CCommMgr::onMessage(uint32_t dwMsgType,void *pData)
 
 int CCommMgr::start()
 {
-
-    for(vector<SServerInfo*>::iterator it=m_vecServers.begin();it!=m_vecServers.end();++it)
-    {
-        if((*it)->iType == SRV_TCP && (*it)->iFd > 0 )
-        {
-            if(m_oCEvent.addFdEvent((*it)->iFd,CEvent::EV_READ,CCommMgr::onAccept,(*it)) < 0 )
-            {
-                snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,m_oCEvent.getErrorMsg());
-                return -1;
-            }
-        }
-        else if((*it)->iType == SRV_UDP  && (*it)->iFd > 0 )
-        {
-            if(m_oCEvent.addFdEvent((*it)->iFd,CEvent::EV_READ,CCommMgr::onUdpRead,(*it)) < 0 )
-            {
-                snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,m_oCEvent.getErrorMsg());
-                return -1;
-            }
-        }
-    }
-
     return  m_oCEvent.run();
-
 }
+
+int CCommMgr::rmSrv(int iSrvId)
+{
+
+	if( iSrvId <0 || iSrvId >(int) m_vecServers.size()-1 )
+	{
+		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,iSrvId error",__FILE__,__LINE__);
+		return -1;
+	}
+
+	SServerInfo * pstServerInfo=m_vecServers[iSrvId];
+	
+	if(pstServerInfo == NULL)
+	{
+		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,iSrvId error",__FILE__,__LINE__);
+		return -1;
+	}
+
+	if(pstServerInfo->iFd > 0)
+	{
+		m_oCEvent.delFdEvent(pstServerInfo->iFd,CEvent::EV_READ|CEvent::EV_WRITE);
+		lce::close(pstServerInfo->iFd);
+	}
+
+	delete pstServerInfo;
+	
+	m_vecServers[iSrvId] = NULL;
+
+
+	return 0;
+}
+
+
 
 
 int CCommMgr::stop()

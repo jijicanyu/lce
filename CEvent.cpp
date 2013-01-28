@@ -7,12 +7,13 @@ namespace lce
 CEvent::CEvent()
 {
     ::pthread_mutex_init(&m_lock,0);
-    m_bRun=true;
+    m_bRun=false;
+	m_bInit = false;
     m_stFdEvents = NULL;
     m_stEPollState.iEPollFd= -1;
-    memset(m_szTimeEventIndexs,0,sizeof(m_szTimeEventIndexs));
     m_iMsgFd[0]=-1;
     m_iMsgFd[1]=-1;
+	m_dwMaxFdNum = 0;
 
 }
 
@@ -51,10 +52,17 @@ CEvent::~CEvent()
 
 }
 
-int CEvent::init()
+int CEvent::init(uint32_t dwMaxFdNum /* = 100000 */)
 {
+	if(m_bInit)
+	{
+		return 0;
+	}
+		
 
-    m_stEPollState.iEPollFd = epoll_create ( EPOLL_MAX_SIZE );
+	m_dwMaxFdNum = dwMaxFdNum;
+
+    m_stEPollState.iEPollFd = epoll_create ( dwMaxFdNum );
 
     if( m_stEPollState.iEPollFd < 0 )
     {
@@ -62,11 +70,9 @@ int CEvent::init()
         return -1;
     }
 
-    m_stFdEvents =new SFdEvent[EPOLL_MAX_SIZE];
+    m_stFdEvents =new SFdEvent[dwMaxFdNum];
 
-    m_dwTimerNum =0;
-
-    for(int i=0;i<EPOLL_MAX_SIZE;i++)
+    for(int i=0;i< (int)dwMaxFdNum;i++)
     {
         m_stFdEvents[i].iEventType=EV_DONE;
         m_stFdEvents[i].pReadProc = NULL;
@@ -99,6 +105,7 @@ int CEvent::init()
 
     addFdEvent(m_iMsgFd[0],CEvent::EV_READ,NULL,NULL);//自定义事件通知
 
+	m_bInit = true;
     return 0;
 }
 
@@ -106,7 +113,7 @@ int CEvent::init()
 int CEvent::addFdEvent ( int iWatchFd, int iEventType, fdEventCb pFdCb,void * pClientData=NULL)
 {
 
-    if (iWatchFd>= EPOLL_MAX_SIZE)
+    if (iWatchFd >= (int)m_dwMaxFdNum || iWatchFd < 0)
     {
         snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d CEvent::addFdEvent too big iWathchFd error",__FILE__,__LINE__);
         return -1;
@@ -115,7 +122,7 @@ int CEvent::addFdEvent ( int iWatchFd, int iEventType, fdEventCb pFdCb,void * pC
 
     struct epoll_event stEvent;
 
-    stEvent.events=0;
+    stEvent.events = 0;
 
 
     int iOP=m_stFdEvents[iWatchFd].iEventType == EV_DONE ? EPOLL_CTL_ADD : EPOLL_CTL_MOD;
@@ -157,7 +164,7 @@ int CEvent::addFdEvent ( int iWatchFd, int iEventType, fdEventCb pFdCb,void * pC
   */
 int CEvent::delFdEvent(int iWatchFd, int iEventType)
 {
-    if (iWatchFd>= EPOLL_MAX_SIZE)
+    if (iWatchFd >= (int)m_dwMaxFdNum || iWatchFd < 0)
     {
         snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d CEvent::delFdEvent too big iWathchFd error",__FILE__,__LINE__);
         return -1;
@@ -201,19 +208,16 @@ int CEvent::delFdEvent(int iWatchFd, int iEventType)
   */
 int CEvent::delTimer(uint32_t dwTimerId)
 {
-    if(dwTimerId >=(uint32_t) CEVENT_MAX_TIME_EVENT)
-    {
-        snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d CEvent::delTimer too big dwTimerId error",__FILE__,__LINE__);
-        return -1;
-    }
 
-    if(m_szTimeEventIndexs[dwTimerId] == 0)
-    {
-        return 0;
-    }
+	MAP_TIME_INDEX::iterator it = m_mapTimeEventIndexs.find(dwTimerId);
+
+	if(it == m_mapTimeEventIndexs.end())
+	{
+		return 0;
+	}
 
     STimeEvent stTimeEvent;
-    stTimeEvent.ddwMillSecs=m_szTimeEventIndexs[dwTimerId];
+    stTimeEvent.ddwMillSecs = it->second;
 
     multiset<STimeEvent *>::iterator find = m_setSTimeEvents.find(&stTimeEvent);
 
@@ -227,7 +231,8 @@ int CEvent::delTimer(uint32_t dwTimerId)
             break;
         }
     }
-    m_szTimeEventIndexs[dwTimerId] = 0;
+
+    m_mapTimeEventIndexs.erase(it);
 
     return 0;
 
@@ -238,30 +243,27 @@ int CEvent::delTimer(uint32_t dwTimerId)
   *
   * (documentation goes here)
   */
-int CEvent::addTimer(uint32_t dwTimerId,uint64_t ddwExpire, timeEventCb pTimeCb, void* pClientData)
+int CEvent::addTimer(uint32_t dwTimerId,uint32_t dwExpire, timeEventCb pTimeCb, void* pClientData)
 {
 
-    if(dwTimerId >= (uint32_t)CEVENT_MAX_TIME_EVENT)
-    {
-        snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d CEvent::addTimer too big dwTimerId error",__FILE__,__LINE__);
-        return -1;
-    }
+	MAP_TIME_INDEX::iterator it = m_mapTimeEventIndexs.find(dwTimerId);
 
-    if(m_szTimeEventIndexs[dwTimerId]!=0)
-    {
-        delTimer(dwTimerId);
-    }
+	if(it != m_mapTimeEventIndexs.end())
+	{
+		delTimer(dwTimerId);
+	}
 
     STimeEvent *pstTimeEvent =new STimeEvent;
 
-    pstTimeEvent->ddwMillSecs=CEvent::getMillSecsNow()+ddwExpire;
+    pstTimeEvent->ddwMillSecs=CEvent::getMillSecsNow()+dwExpire;
     pstTimeEvent->dwTimerId=dwTimerId;
     pstTimeEvent->pClientData=pClientData;
     pstTimeEvent->pTimeProc=pTimeCb;
 
-    m_szTimeEventIndexs[dwTimerId]=pstTimeEvent->ddwMillSecs;
+    m_mapTimeEventIndexs[dwTimerId] = pstTimeEvent->ddwMillSecs;
 
     m_setSTimeEvents.insert(pstTimeEvent);
+
     return 0;
 }
 
@@ -294,7 +296,15 @@ int CEvent::addMessage(uint32_t dwMsgType,msgEventCb pMsgCb,void * pClientData)
 
 int CEvent::run()
 {
-    m_bRun = true;
+	if(m_bRun)
+	{
+		return 0;
+	}
+	else
+	{
+		m_bRun = true;
+	}
+
 
     while(m_bRun)
     {
@@ -311,10 +321,10 @@ int CEvent::run()
 
 				if(it == m_setSTimeEvents.end()) break;
 
-				if ((*it)->ddwMillSecs<= ddwTimeNow)
+				if ((*it)->ddwMillSecs <= ddwTimeNow)
 				{
 					STimeEvent * pstTimeEvent=(*it);
-					m_szTimeEventIndexs[(*it)->dwTimerId] = 0;
+					m_mapTimeEventIndexs.erase((*it)->dwTimerId);
 					m_setSTimeEvents.erase(it);
 
 					void *pClientData = pstTimeEvent->pClientData;
