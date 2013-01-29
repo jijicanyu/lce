@@ -30,6 +30,7 @@ public:
         CTaskThread()
         {
             m_pTask=NULL;
+			m_iIndex = 0;
         }
 
         ~CTaskThread()
@@ -38,9 +39,10 @@ public:
         }
 
 
-        int init(CTask *pTask)
+        int init(CTask *pTask,int iIndex)
         {
             m_pTask=pTask;
+			m_iIndex = iIndex;
             return 0;
         }
 
@@ -65,7 +67,7 @@ public:
 
                 if (pstTaskInfo != NULL)
                 {
-                    m_pTask->onWork(pstTaskInfo->iTaskType,pstTaskInfo->pData);
+                    m_pTask->onWork(pstTaskInfo->iTaskType,pstTaskInfo->pData,m_iIndex);
                     delete pstTaskInfo;
                 }
 
@@ -74,6 +76,7 @@ public:
         }
     private:
         CTask * m_pTask;
+		int m_iIndex;
     };
 
 
@@ -83,7 +86,7 @@ public:
     int run();
     int stop();
     int dispatch(int iTaskType,void *pData);
-    virtual void onWork(int iTaskType,void *pData) = 0;
+    virtual void onWork(int iTaskType,void *pData,int iIndex) = 0;
 
     char *getErrMsg() { return m_szErrMsg;}
 private:

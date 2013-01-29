@@ -13,7 +13,7 @@ namespace lce
         for(int i=0;i<m_iThreadNum;i++)
         {
             CTaskThread *pTaskThread=new CTaskThread;
-            pTaskThread->init(this);
+            pTaskThread->init(this,i);
             m_vecTaskThreads.push_back(pTaskThread);
         }
         return 0;
