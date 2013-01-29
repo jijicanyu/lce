@@ -69,7 +69,7 @@ typedef unsigned long size_type;
 		inline ~CShmListIterator();
 		inline CShmListIterator(const unsigned long dwValueOffset, void* pStartAddr);
 		inline _self& operator=(const _self& rhs);
-		inline _self& Assign(const unsigned long dwValueOffset, void* pStartAddr);
+		inline _self& assign(const unsigned long dwValueOffset, void* pStartAddr);
 		inline CShmListIterator(const _self& rhs);
 		inline const _self& operator++() const;
 		inline _self& operator++() ;
@@ -109,7 +109,7 @@ typedef unsigned long size_type;
 		inline ~CShmListReverseIterator();
 		inline CShmListReverseIterator(const unsigned long dwValueOffset, void* pStartAddr);
 		inline _self& operator=(const _self& rhs);
-		inline _self& Assign(const unsigned long dwValueOffset, void* pStartAddr);
+		inline _self& assign(const unsigned long dwValueOffset, void* pStartAddr);
 		inline CShmListReverseIterator(const _self& rhs);
 		inline const _self& operator++() const;
 		inline _self& operator++() ;
@@ -660,7 +660,7 @@ typedef unsigned long size_type;
 	}
 
 	template<typename T>
-	CShmListIterator<T>& CShmListIterator<T>::Assign(const unsigned long dwValueOffset, void* pStartAddr)
+	CShmListIterator<T>& CShmListIterator<T>::assign(const unsigned long dwValueOffset, void* pStartAddr)
 	{
 		m_dwValueOffset = dwValueOffset;
 		m_pStartAddr = pStartAddr;
@@ -788,7 +788,7 @@ typedef unsigned long size_type;
 	}
 
 	template<typename T>
-	CShmListReverseIterator<T>& CShmListReverseIterator<T>::Assign(const unsigned long dwValueOffset, void* pStartAddr)
+	CShmListReverseIterator<T>& CShmListReverseIterator<T>::assign(const unsigned long dwValueOffset, void* pStartAddr)
 	{
 		m_dwValueOffset = dwValueOffset;
 		m_pStartAddr = pStartAddr;

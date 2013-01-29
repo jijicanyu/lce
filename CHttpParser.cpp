@@ -5,6 +5,7 @@ using namespace std;
 namespace lce
 {
 
+std::string CHttpParser::m_sNull = "";
 
 CHttpParser::CHttpParser(void)
 {
@@ -242,13 +243,21 @@ void CHttpParser::parsePostFormData(const string &sBoundary, const string::size_
 		{
 			continue;
 		}
+		SFile stFile;
+		m_mapFiles[sName] = stFile;
 
-		m_sFile = sNV.substr(pos+sFileType.size()+4);
-		if(m_sFile.size() > 2)	//去掉最后的\r\n
+		MAP_FILE::iterator it = m_mapFiles.find(sName);
+
+		it->second.sData = sNV.substr(pos+sFileType.size()+4);
+
+		if(it->second.sData.size() > 2)	//去掉最后的\r\n
 		{
-			m_sFile.erase(m_sFile.size()-2);
+			it->second.sData.erase(it->second.sData.size()-2);
 		}
 
+		it->second.sContentType =sFileType;
+		it->second.sName = m_sFileName;
+	
 		//cout << "+++file size=" << m_sFile.size() << ",content="<< m_sFile << endl;
 	}
 

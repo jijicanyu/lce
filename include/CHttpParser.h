@@ -16,8 +16,23 @@ enum HTTP_COMMAND{
 	HEAD
 };
 
-typedef map<string, string> MAP_COOKIE;
-typedef map<string, string> MAP_VALUE;
+struct SFile 
+{
+	std::string sData;
+	std::string sName;
+	std::string sContentType;
+
+};
+struct SMIMEHeader{
+	std::string sDisposition;
+	std::string sName;
+	std::string sFileName;
+	std::string sContentType;
+};
+
+typedef std::map<std::string, std::string> MAP_COOKIE;
+typedef std::map<std::string, std::string> MAP_VALUE;
+typedef std::map<std::string, SFile> MAP_FILE;
 typedef map<string, string > MAP_HEAD_INFO;
 
 class CHttpParser
@@ -70,8 +85,32 @@ public:
 
 	const char* getErrMsg() const {	return m_szErrMsg;	}
 
-	const string& getFile() const  {	return m_sFile; }
-	const string& getFileName() const  {	return m_sFileName; }
+	const string& getFile(const std::string& sName) const  {
+
+		MAP_FILE::const_iterator it = m_mapFiles.find(sName);
+		if ( it != m_mapFiles.end() )
+		{
+			return it->second.sData;
+		}
+		return m_sNull;		
+	}
+	const string& getFileName(const std::string& sName) const  {			
+		MAP_FILE::const_iterator it = m_mapFiles.find(sName);
+		if ( it != m_mapFiles.end() )
+		{
+			return it->second.sName;
+		}
+		return m_sNull;	 
+	}
+
+	const string& getFileType(const std::string& sName) const  {			
+		MAP_FILE::const_iterator it = m_mapFiles.find(sName);
+		if ( it != m_mapFiles.end() )
+		{
+			return it->second.sContentType;
+		}
+		return m_sNull;	 
+	}
 
 	void clear(){
 		m_sURI.clear();
@@ -134,6 +173,11 @@ private:
 
 	string m_sFile;
 	string m_sFileName;
+
+	MAP_FILE m_mapFiles;
+
+	static std::string m_sNull;
+
 };
 
 

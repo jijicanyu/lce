@@ -46,7 +46,23 @@ public:
 
         pstRequest->stSession=stSession;
         pstRequest->oParser.setData(pszData,iSize);
-		
+
+		string sfile1 = pstRequest->oParser.getFile("file1");
+		cout<<sfile1<<endl;
+
+		string sfile2 = pstRequest->oParser.getFile("file2");
+		cout<<sfile2<<endl;
+
+		string sValue;
+		pstRequest->oParser.getValue("submit",sValue);
+		cout<<sValue<<endl;
+
+
+		string sfilename1 = pstRequest->oParser.getFileName("file1");
+		cout<<sfilename1<<endl;
+
+		string sfilename2 = pstRequest->oParser.getFileName("file2");
+		cout<<sfilename2<<endl;
 		/*
         pstRequest->oResponse.begin();
         pstRequest->oResponse.setStatusCode(200);
@@ -193,7 +209,6 @@ int main()
 	oPkg>>a;
 	oPkg>>b;
 
-	cout<<"a = "<<a<<" b ="<<b<<endl;
 
     CProCenter::getInstance().init(8,50000);
     CProCenter::getInstance().run();

@@ -14,6 +14,7 @@
 #include "CEvent.h"
 #include "signal.h"
 #include "CProcessor.h"
+
 using namespace std;
 
 namespace lce
@@ -73,6 +74,8 @@ public:
 		ERR_INVALID_PACKAGE = 2,
 		ERR_MAX_CLIENT = 3,
 		ERR_NO_BUFFER = 4,
+		ERR_NOT_READY = 5,
+		ERR_SYSTEM = 6,
 	};
 
 private:
@@ -202,8 +205,8 @@ private:
 private:
     vector <SServerInfo *> m_vecServers;
     vector <SClientInfo *> m_vecClients;
-	map<int,SProcessor *> m_mapTimeProcs;
-	map<int,CProcessor*> m_mapSigProcs;
+	hash_map<int,SProcessor *> m_mapTimeProcs;
+	hash_map<int,CProcessor*> m_mapSigProcs;
     CEvent m_oCEvent;
     char m_szErrMsg[1024];
     static CCommMgr *m_pInstance;

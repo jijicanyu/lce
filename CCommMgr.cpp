@@ -87,6 +87,8 @@ int CCommMgr::createSrv(int iType,const string &sIp,uint16_t wPort,uint32_t dwIn
             return -1;
         }
 
+		pstServerInfo->iFd=iFd;
+
 		if(m_oCEvent.addFdEvent(pstServerInfo->iFd,CEvent::EV_READ,CCommMgr::onUdpRead,pstServerInfo) < 0 )
 		{
 			snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,m_oCEvent.getErrorMsg());
@@ -95,7 +97,7 @@ int CCommMgr::createSrv(int iType,const string &sIp,uint16_t wPort,uint32_t dwIn
 			return -1;
 		}
 
-        pstServerInfo->iFd=iFd;
+
 
     }
 
@@ -861,7 +863,7 @@ int CCommMgr::addTimer(uint32_t dwTimerId,uint32_t dwExpire,CProcessor *pProcess
 
 	SProcessor *pstProcessor = NULL;
 
-	map<int,SProcessor *>::iterator it = m_mapTimeProcs.find(dwTimerId);
+	hash_map<int,SProcessor *>::iterator it = m_mapTimeProcs.find(dwTimerId);
 
 	if(it != m_mapTimeProcs.end())
 	{
@@ -899,7 +901,7 @@ void CCommMgr::onTimer(uint32_t dwTimerId,void *pData)
 
 int CCommMgr::delTimer(uint32_t dwTimerId)
 {
-	map<int,SProcessor *>::iterator it = m_mapTimeProcs.find(dwTimerId);
+	hash_map<int,SProcessor *>::iterator it = m_mapTimeProcs.find(dwTimerId);
 
 	if(it != m_mapTimeProcs.end())
 	{
@@ -925,7 +927,7 @@ int CCommMgr::addSigHandler(int iSignal,CProcessor *pProcessor)
 
 void CCommMgr::onSignal(int iSignal)
 {
-	map<int,CProcessor *>::iterator it = CCommMgr::getInstance().m_mapSigProcs.find(iSignal);
+	hash_map<int,CProcessor *>::iterator it = CCommMgr::getInstance().m_mapSigProcs.find(iSignal);
 	if(it != CCommMgr::getInstance().m_mapSigProcs.end())
 	{
 		it->second->onSignal(iSignal);
@@ -1022,7 +1024,7 @@ CCommMgr::~CCommMgr()
         }
     }
 
-	for(map<int,SProcessor*>::iterator it = m_mapTimeProcs.begin();it!=m_mapTimeProcs.end();++it)
+	for(hash_map<int,SProcessor*>::iterator it = m_mapTimeProcs.begin();it!=m_mapTimeProcs.end();++it)
 	{
 		delete it->second;
 	}
