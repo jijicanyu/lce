@@ -28,6 +28,17 @@ int setNBlock(int iFd)
     return 0;
 }
 
+
+int setNODelay(int iFd)
+{
+	int yes = 1;
+	if(setsockopt(iFd,IPPROTO_TCP,TCP_NODELAY,(char*)&yes,sizeof(int)) !=0)
+	{
+		return -1;
+	}
+	return 0;
+}
+
 int close(const int iFd)
 {
     return ::close(iFd);
