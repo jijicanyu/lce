@@ -82,8 +82,8 @@ public:
     }
 
 
-    void onWork(int iTaskType,void *pData)
-    {
+    void onWork(int iTaskType,void *pData,int iIndex)
+    { 
 
 		//cout<<"type="<<iTaskType<<endl;
         SRequest *pstRequest=(SRequest*)pData;
