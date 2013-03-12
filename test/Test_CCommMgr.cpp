@@ -45,7 +45,8 @@ public:
         SRequest *pstRequest=new SRequest;
 
         pstRequest->stSession=stSession;
-        pstRequest->oParser.setData(pszData,iSize);
+        /*
+	pstRequest->oParser.setData(pszData,iSize);
 
 		string sfile1 = pstRequest->oParser.getFile("file1");
 		cout<<sfile1<<endl;
@@ -63,7 +64,8 @@ public:
 
 		string sfilename2 = pstRequest->oParser.getFileName("file2");
 		cout<<sfilename2<<endl;
-		/*
+	*/	
+	/*
         pstRequest->oResponse.begin();
         pstRequest->oResponse.setStatusCode(200);
         pstRequest->oResponse<<"Hello world";
@@ -86,7 +88,8 @@ public:
     { 
 
 		//cout<<"type="<<iTaskType<<endl;
-        SRequest *pstRequest=(SRequest*)pData;
+        //cout<<"index"<< iIndex<<endl;
+	SRequest *pstRequest=(SRequest*)pData;
 
         pstRequest->oResponse.begin();
         pstRequest->oResponse.setStatusCode(200);

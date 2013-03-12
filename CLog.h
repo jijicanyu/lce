@@ -27,7 +27,7 @@ enum{
 };
 
 public:
-    static int init(const string &sLogFile,uint32_t dwLogSize,uint32_t dwLogCount,bool bShowCmd=true,uint32_t cLevel=15,bool bShowLine=true)
+    static int init(const string &sLogFile,unsigned long dwLogSize,uint32_t dwLogCount,bool bShowCmd=true,uint32_t cLevel=15,bool bShowLine=true)
     {
         CLog::m_cLevel=cLevel;
         CLog::m_bShowLine=bShowLine;

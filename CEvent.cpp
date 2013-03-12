@@ -268,10 +268,10 @@ int CEvent::addTimer(uint32_t dwTimerId,uint32_t dwExpire, timeEventCb pTimeCb, 
 }
 
 
-int CEvent::addMessage(uint32_t dwMsgType,msgEventCb pMsgCb,void * pClientData)
+int CEvent::addMessage(int dwMsgType,msgEventCb pMsgCb,void * pClientData)
 {
     SMsgEvent *pstMsgEvent = new SMsgEvent;
-    pstMsgEvent->dwMsgType=dwMsgType;
+    pstMsgEvent->dwMsgType= (uint32_t) dwMsgType;
     pstMsgEvent->pMsgProc=pMsgCb;
     pstMsgEvent->pClientData=pClientData;
 
@@ -378,7 +378,7 @@ int CEvent::run()
 						if(pstMsgEvent != NULL)
 						{
 							if (pstMsgEvent->pMsgProc)
-								pstMsgEvent->pMsgProc(pstMsgEvent->dwMsgType,pstMsgEvent->pClientData);
+								pstMsgEvent->pMsgProc((int)pstMsgEvent->dwMsgType,pstMsgEvent->pClientData);
 							delete pstMsgEvent;
 						}
 						else

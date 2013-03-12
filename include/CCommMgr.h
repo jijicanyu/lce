@@ -169,7 +169,7 @@ public:
     int stop();
 	
 
-    int sendMessage(uint32_t dwMsgType,CProcessor * pProcessor,void* pData = NULL);
+    int sendMessage(int dwMsgType,CProcessor * pProcessor,void* pData = NULL);
 
     const char * getErrMsg(){ return m_szErrMsg;}
 
@@ -185,7 +185,7 @@ public:
 
     static void onAccept(int iFd,void *pData);
     static void onTimer(uint32_t dwTimerId,void *pData);
-	static void onMessage(uint32_t dwMsgType,void *pData);
+	static void onMessage(int dwMsgType,void *pData);
 	static void onSignal(int iSignal);
 
     static CCommMgr & getInstance()

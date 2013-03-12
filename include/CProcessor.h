@@ -14,7 +14,7 @@ public:
 	virtual void onConnect(SSession &stSession,bool bOk){}
 	virtual void onError(SSession &stSession,const char * szErrMsg,int iError){}
 	virtual void onTimer(uint32_t dwTimeId,void *pData){}
-	virtual void onMessage(uint32_t dwMsgType,void *pData){}
+	virtual void onMessage(int dwMsgType,void *pData){}
 	virtual void onSignal(int iSignal){}
 };
 

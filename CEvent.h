@@ -23,7 +23,7 @@ namespace lce
 {
 typedef void (*fdEventCb)(int iFd,void *pData);
 typedef void (*timeEventCb)(uint32_t dwTimeId,void *pData);
-typedef void (*msgEventCb)(uint32_t dwMsgType,void *pData);
+typedef void (*msgEventCb)(int dwMsgType,void *pData);
 
 const int EPOLL_MAX_EVENT = 1024;
 const int EPOLL_WAIT_TIMEOUT = 3000;
@@ -92,7 +92,7 @@ public:
 
     int addTimer(uint32_t dwTimerId,uint32_t dwExpire,timeEventCb pTimeCb,void * pClientData);
     int delTimer(uint32_t dwTimerId);
-    int addMessage(uint32_t dwMsgType,msgEventCb pMsgCb,void * pClientData);
+    int addMessage(int dwMsgType,msgEventCb pMsgCb,void * pClientData);
 
     int run();
     int stop();

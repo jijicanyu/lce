@@ -934,7 +934,7 @@ void CCommMgr::onSignal(int iSignal)
 	}
 }
 
-int CCommMgr::sendMessage(uint32_t dwMsgType,CProcessor *pProcessor,void* pData)
+int CCommMgr::sendMessage(int dwMsgType,CProcessor *pProcessor,void* pData)
 {
 	if(pProcessor == NULL)
 	{
@@ -949,7 +949,7 @@ int CCommMgr::sendMessage(uint32_t dwMsgType,CProcessor *pProcessor,void* pData)
 	return m_oCEvent.addMessage(dwMsgType,CCommMgr::onMessage,pstProcessor);
 
 }
-void CCommMgr::onMessage(uint32_t dwMsgType,void *pData)
+void CCommMgr::onMessage(int dwMsgType,void *pData)
 {
 	if (pData == NULL)
 		return;

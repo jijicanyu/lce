@@ -273,6 +273,17 @@ public:
         init();
         m_value.integer = 0;
     }
+
+	CAnyValue(const bool bValue)
+		:m_ucType(DType::Bool)
+		,m_ucSubType(DType::Bool)
+		,m_bInit(false)
+		,m_bHasData(bValue)
+	{
+		init();
+		m_value.integer = bValue?1:0;
+	}
+
     CAnyValue(const char cValue)
         :m_ucType(DType::Integer)
         ,m_ucSubType(DType::Integer1)
@@ -281,16 +292,6 @@ public:
     {
         init();
         m_value.integer = cValue;
-    }
-
-    CAnyValue(const bool bValue)
-        :m_ucType(DType::Bool)
-        ,m_ucSubType(DType::Bool)
-        ,m_bInit(false)
-        ,m_bHasData(bValue)
-    {
-        init();
-        m_value.integer = bValue?1:0;
     }
 
     CAnyValue(const unsigned char ucValue)
@@ -321,70 +322,91 @@ public:
         m_value.integer = shValue;
     }
 
+	CAnyValue(const int iValue)
+		:m_ucType(DType::Integer)
+		,m_ucSubType(DType::Integer4)
+		,m_bInit(false)
+		,m_bHasData(iValue==0?false:true)
+	{
+		init();
+		m_value.integer = iValue;
+	}
+	CAnyValue(const unsigned int uiValue)
+		:m_ucType(DType::Integer)
+		,m_ucSubType(DType::Integer4)
+		,m_bInit(false)
+		,m_bHasData(uiValue==0?false:true)
+	{
+		init();
+		m_value.integer = uiValue;
+	}
+
+#ifdef __x86_64__
 
     CAnyValue(const long lValue)
         :m_ucType(DType::Integer)
-        ,m_ucSubType(DType::Integer4)
+        ,m_ucSubType(DType::Integer8)
         ,m_bInit(false)
         ,m_bHasData(lValue==0?false:true)
     {
         init();
         m_value.integer = lValue;
     }
-    CAnyValue(const unsigned long dwValue)
-        :m_ucType(DType::Integer)
-        ,m_ucSubType(DType::Integer4)
-        ,m_bInit(false)
-        ,m_bHasData(dwValue==0?false:true)
-    {
-        init();
-        m_value.integer = dwValue;
-    }
-
-
-    CAnyValue(const int iValue)
-        :m_ucType(DType::Integer)
-        ,m_ucSubType(DType::Integer4)
-        ,m_bInit(false)
-        ,m_bHasData(iValue==0?false:true)
-    {
-        init();
-        m_value.integer = iValue;
-    }
-    CAnyValue(const unsigned int uiValue)
-        :m_ucType(DType::Integer)
-        ,m_ucSubType(DType::Integer4)
-        ,m_bInit(false)
-        ,m_bHasData(uiValue==0?false:true)
-    {
-        init();
-        m_value.integer = uiValue;
-    }
-
-    //64λϵͳ��ͻ
-#ifndef __x86_64__
-
-    CAnyValue(const uint64_t ullValue)
+    CAnyValue(const unsigned long ddwValue)
         :m_ucType(DType::Integer)
         ,m_ucSubType(DType::Integer8)
         ,m_bInit(false)
-        ,m_bHasData(ullValue==0?false:true)
+        ,m_bHasData(ddwValue==0?false:true)
     {
         init();
-        m_value.integer = ullValue;
+        m_value.integer = ddwValue;
     }
 
-    CAnyValue(const int64_t llValue)
-        :m_ucType(DType::Integer)
-        ,m_ucSubType(DType::Integer8)
-        ,m_bInit(false)
-        ,m_bHasData(llValue==0?false:true)
-    {
-        init();
-        m_value.integer = llValue;
-    }
+#else
+
+	CAnyValue(const long lValue)
+		:m_ucType(DType::Integer)
+		,m_ucSubType(DType::Integer4)
+		,m_bInit(false)
+		,m_bHasData(lValue==0?false:true)
+	{
+		init();
+		m_value.integer = lValue;
+	}
+	CAnyValue(const unsigned long dwValue)
+		:m_ucType(DType::Integer)
+		,m_ucSubType(DType::Integer4)
+		,m_bInit(false)
+		,m_bHasData(dwValue==0?false:true)
+	{
+		init();
+		m_value.integer = dwValue;
+	}
 
 #endif
+
+
+	CAnyValue(const unsigned long long ullValue)
+		:m_ucType(DType::Integer)
+		,m_ucSubType(DType::Integer8)
+		,m_bInit(false)
+		,m_bHasData(ullValue==0?false:true)
+	{
+		init();
+		m_value.integer = ullValue;
+	}
+
+	CAnyValue(const long long llValue)
+		:m_ucType(DType::Integer)
+		,m_ucSubType(DType::Integer8)
+		,m_bInit(false)
+		,m_bHasData(llValue==0?false:true)
+	{
+		init();
+		m_value.integer = llValue;
+	}
+
+
 
     CAnyValue(const float flValue)
         :m_ucType(DType::Float)
@@ -466,11 +488,24 @@ public:
         return 0;
     }
 
+
+	int asInt64() const
+	{
+		if ( DType::Integer == m_ucType || DType::Bool == m_ucType )	return static_cast<int64_t>(m_value.integer);
+		return 0;
+	}
+
     int asUInt() const
     {
-        if ( DType::Integer == m_ucType || DType::Bool == m_ucType  )	return static_cast<unsigned int>(m_value.integer);
+        if ( DType::Integer == m_ucType || DType::Bool == m_ucType  )	return static_cast<uint32_t>(m_value.integer);
         return 0;
     }
+
+	int asUInt64() const
+	{
+		if ( DType::Integer == m_ucType || DType::Bool == m_ucType  )	return static_cast<uint64_t>(m_value.integer);
+		return 0;
+	}
 
     bool asBool() const
     {
@@ -484,16 +519,23 @@ public:
         return m_strNull;
     }
 
-    operator uint64_t() const
+    operator unsigned long long() const
     {
         if ( DType::Integer == m_ucType || DType::Bool == m_ucType )	return m_value.integer;
         return 0;
     }
-    operator int64_t() const
+    operator long long() const
     {
-        if ( DType::Integer == m_ucType || DType::Bool == m_ucType  )	return static_cast<int64_t>(m_value.integer);
+        if ( DType::Integer == m_ucType || DType::Bool == m_ucType  )	return static_cast<long long>(m_value.integer);
         return 0;
     }
+
+	operator char() const
+	{
+		if ( DType::Integer == m_ucType  || DType::Bool == m_ucType )	return static_cast<char>(m_value.integer);
+		return 0;
+	}
+
     operator unsigned char() const
     {
         if ( DType::Integer == m_ucType  || DType::Bool == m_ucType )	return static_cast<unsigned char>(m_value.integer);
@@ -506,27 +548,25 @@ public:
         return 0;
     }
 
-    operator double() const
-    {
-        if ( DType::Float == m_ucType )	return static_cast<double>(m_value.flValue);
-        return 0.0;
-    }
+	operator short() const
+	{
+		if ( DType::Integer == m_ucType  || DType::Bool == m_ucType )	return static_cast< short>(m_value.integer);
+		return 0;
+	}
 
-    operator short() const
-    {
-        if ( DType::Integer == m_ucType  || DType::Bool == m_ucType )	return static_cast< short>(m_value.integer);
-        return 0;
-    }
     operator unsigned long() const
     {
         if ( DType::Integer == m_ucType || DType::Bool == m_ucType )	return static_cast<unsigned long>(m_value.integer);
         return 0;
     }
+
     operator long() const
     {
         if ( DType::Integer == m_ucType || DType::Bool == m_ucType  )	return static_cast<long>(m_value.integer);
         return 0;
     }
+
+
     operator int() const
     {
         if ( DType::Integer == m_ucType || DType::Bool == m_ucType  )	return static_cast<int>(m_value.integer);
@@ -542,6 +582,12 @@ public:
         if ( DType::Integer == m_ucType ||DType::Bool == m_ucType )	return m_value.integer==0 ? false : true;
         return false;
     }
+
+	operator double() const
+	{
+		if ( DType::Float == m_ucType )	return static_cast<double>(m_value.flValue);
+		return 0.0;
+	}
 
     operator std::string() const
     {

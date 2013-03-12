@@ -87,29 +87,82 @@ public:
 	}
 
 	//写数据
-	void write(const unsigned char* pszData,const uint16_t wLen)
+	void write(const unsigned char* pszData,const size_t dwLen)
 	{
-		m_pkgData.append(reinterpret_cast<const char*>(pszData), wLen);
+		m_pkgData.append(reinterpret_cast<const char*>(pszData), dwLen);
 	}
 
-	void write(const char* pszData,const uint16_t wLen)
+	void write(const char* pszData,const size_t dwLen)
 	{
-		m_pkgData.append(pszData,wLen);
+		m_pkgData.append(pszData,dwLen);
 	}
 
-	size_t write(const uint64_t ddwVal)
+	size_t write(const unsigned long long ddwVal)
 	{
-		size_t dwPos = m_pkgData.size();
-		uint64_t ddwTmp = htonll(ddwVal);
-		m_pkgData.append(reinterpret_cast<unsigned char*>(&ddwTmp),sizeof(uint64_t));
+		size_t dwPos  = m_pkgData.size();
+		unsigned long long ddwTmp = htonll(ddwVal);
+		m_pkgData.append(reinterpret_cast<unsigned char*>(&ddwTmp),sizeof(unsigned long long));
 		return dwPos;
 	}
 
-	size_t write(const uint32_t dwVal)
+	size_t write(const long long ddwVal)
+	{
+		size_t dwPos  = m_pkgData.size();
+		long long ddwTmp = htonll(ddwVal);
+		m_pkgData.append(reinterpret_cast<unsigned char*>(&ddwTmp),sizeof(long long));
+		return dwPos;
+	}
+
+#ifdef __x86_64__
+	size_t write(const unsigned long ddwVal)
 	{
 		size_t dwPos = m_pkgData.size();
-		uint32_t dwTmp = htonl(dwVal);
-		m_pkgData.append(reinterpret_cast<unsigned char*>(&dwTmp),sizeof(uint32_t));
+		unsigned long ddwTmp = htonll(ddwVal);
+		m_pkgData.append(reinterpret_cast<unsigned char*>(&ddwTmp),sizeof(unsigned long));
+		return dwPos;
+	}
+#else
+	size_t write(const unsigned long dwVal)
+	{
+		size_t dwPos = m_pkgData.size();
+		unsigned long dwTmp = htonl(dwVal);
+		m_pkgData.append(reinterpret_cast<unsigned char*>(&dwTmp),sizeof(unsigned long));
+		return dwPos;
+	}
+#endif
+
+#ifdef __x86_64__
+	size_t write(const long ddwVal)
+	{
+		size_t dwPos = m_pkgData.size();
+		long ddwTmp = htonll(ddwVal);
+		m_pkgData.append(reinterpret_cast<unsigned char*>(&ddwTmp),sizeof(long));
+		return dwPos;
+	}
+#else
+	size_t write(const long dwVal)
+	{
+		size_t dwPos = m_pkgData.size();
+		long dwTmp = htonl(dwVal);
+		m_pkgData.append(reinterpret_cast<unsigned char*>(&dwTmp),sizeof(long));
+		return dwPos;
+	}
+#endif
+
+
+	size_t write(const unsigned int dwVal)
+	{
+		size_t dwPos = m_pkgData.size();
+		unsigned int dwTmp = htonl(dwVal);
+		m_pkgData.append(reinterpret_cast<unsigned char*>(&dwTmp),sizeof(unsigned int));
+		return dwPos;
+	}
+
+	size_t write(const  int dwVal)
+	{
+		size_t dwPos = m_pkgData.size();
+		int dwTmp = htonl(dwVal);
+		m_pkgData.append(reinterpret_cast<unsigned char*>(&dwTmp),sizeof(int));
 		return dwPos;
 	}
 
@@ -121,6 +174,14 @@ public:
 		return dwPos;
 	}
 
+	size_t write(const short wVal)
+	{
+		size_t dwPos = m_pkgData.size();
+		short wTmp = htons(wVal) ;
+		m_pkgData.append(reinterpret_cast<const char*>(&wTmp),sizeof(short));
+		return dwPos;
+	}
+
 	size_t write(const unsigned char ucVal)
 	{
 		size_t dwPos = m_pkgData.size();
@@ -128,14 +189,55 @@ public:
 		return dwPos;
 	}
 
-	void writePos(const uint64_t ddwVal, const size_t dwPos){
-		uint64_t ddwTmp = htonll(ddwVal) ;
-		m_pkgData.replace(dwPos, sizeof(uint64_t), reinterpret_cast<char*>(&ddwTmp),sizeof(uint64_t));
+	size_t write(const char cVal)
+	{
+		size_t dwPos = m_pkgData.size();
+		m_pkgData.append(reinterpret_cast<const char*>(&cVal),sizeof(char));
+		return dwPos;
 	}
 
-	void writePos(const uint32_t dwVal, const size_t dwPos){
-		unsigned long dwTmp = htonl(dwVal) ;
-		m_pkgData.replace(dwPos, sizeof(uint32_t), reinterpret_cast<char*>(&dwTmp),sizeof(uint32_t));
+	void writePos(const unsigned long long ddwVal, const size_t dwPos){
+		unsigned long long ddwTmp = htonll(ddwVal) ;
+		m_pkgData.replace(dwPos, sizeof(unsigned long long), reinterpret_cast<char*>(&ddwTmp),sizeof(unsigned long long));
+	}
+
+	void writePos(const  long long ddwVal, const size_t dwPos){
+		long long ddwTmp = htonll(ddwVal) ;
+		m_pkgData.replace(dwPos, sizeof(long long), reinterpret_cast<char*>(&ddwTmp),sizeof(long long));
+	}
+
+#ifdef __x86_64__
+	void writePos(const long ddwVal, const size_t dwPos){
+		long dwTmp = htonll(ddwVal) ;
+		m_pkgData.replace(dwPos, sizeof(long), reinterpret_cast<char*>(&dwTmp),sizeof(long));
+	}
+#else
+	void writePos(const long dwVal, const size_t dwPos){
+		long dwTmp = htonl(dwVal) ;
+		m_pkgData.replace(dwPos, sizeof(long), reinterpret_cast<char*>(&dwTmp),sizeof(long));
+	}
+#endif
+
+#ifdef __x86_64__
+	void writePos(const unsigned long ddwVal, const size_t dwPos){
+		unsigned long dwTmp = htonll(ddwVal) ;
+		m_pkgData.replace(dwPos, sizeof(unsigned long), reinterpret_cast<char*>(&dwTmp),sizeof(unsigned long));
+	}
+#else
+	void writePos(const unsigned long dwVal, const size_t dwPos){
+		long dwTmp = htonl(dwVal) ;
+		m_pkgData.replace(dwPos, sizeof(unsigned long), reinterpret_cast<char*>(&dwTmp),sizeof(unsigned long));
+	}
+#endif
+
+	void writePos(const unsigned int dwVal, const size_t dwPos){
+		unsigned int dwTmp = htonl(dwVal) ;
+		m_pkgData.replace(dwPos, sizeof(unsigned int), reinterpret_cast<char*>(&dwTmp),sizeof(unsigned int));
+	}
+
+	void writePos(const int dwVal, const size_t dwPos){
+		int dwTmp = htonl(dwVal) ;
+		m_pkgData.replace(dwPos, sizeof(int), reinterpret_cast<char*>(&dwTmp),sizeof(int));
 	}
 
 	void writePos(const unsigned short wVal, const size_t dwPos){
@@ -143,8 +245,17 @@ public:
 		m_pkgData.replace(dwPos, sizeof(unsigned short), reinterpret_cast<char*>(&wTmp),sizeof(unsigned short));
 	}
 
+	void writePos(const short wVal, const size_t dwPos){
+		short wTmp = htons(wVal) ;
+		m_pkgData.replace(dwPos, sizeof(short), reinterpret_cast<char*>(&wTmp),sizeof(short));
+	}
+
 	void writePos(const unsigned char ucVal, const size_t dwPos){
 		m_pkgData.replace(dwPos, sizeof(unsigned char), reinterpret_cast<const char*>(&ucVal),sizeof(unsigned char));
+	}
+
+	void writePos(const char cVal, const size_t dwPos){
+		m_pkgData.replace(dwPos, sizeof(char), reinterpret_cast<const char*>(&cVal),sizeof(char));
 	}
 
 	this_type& operator << (const std::string& sVal)
@@ -157,6 +268,18 @@ public:
 		m_pkgData.append(pszVal, strlen(pszVal));
 		return *this;
 	}
+
+	this_type& operator << (const unsigned char ucVal)
+	{
+		m_pkgData.append(reinterpret_cast<char*>(&ucVal),sizeof(unsigned char));
+		return *this;
+	}
+	this_type& operator << (const char cVal)
+	{
+		m_pkgData.append(reinterpret_cast<char*>(&cVal),sizeof(char));
+		return *this;
+	}
+
 	this_type& operator << (const unsigned short wVal)
 	{
 		unsigned short wTmp = htons(wVal) ;
@@ -169,64 +292,7 @@ public:
 		m_pkgData.append(reinterpret_cast<char*>(&shTmp),sizeof(short));
 		return *this;
 	}
-	#ifdef __x86_64__
 
-
-	this_type& operator << (const unsigned long long ddwVal)
-	{
-		unsigned long long ddwTmp = htonll(ddwVal);
-		m_pkgData.append(reinterpret_cast<char*>(&ddwTmp),sizeof(unsigned long long));
-		return *this;
-	}
-	this_type& operator << (const long long ddwVal)
-	{
-		long long ddwTmp = htonll(ddwVal);
-		m_pkgData.append(reinterpret_cast<char*>(&ddwTmp),sizeof(long long));
-		return *this;
-	}
-
-
-	this_type& operator << (const unsigned long dwVal)
-	{
-		unsigned long dwTmp = htonll(dwVal);
-		m_pkgData.append(reinterpret_cast<char*>(&dwTmp),sizeof(unsigned long));
-		return *this;
-	}
-	this_type& operator << (const long dwVal)
-	{
-		long dwTmp = htonll(dwVal);
-		m_pkgData.append(reinterpret_cast<char*>(&dwTmp),sizeof(long));
-		return *this;
-	}
-    #else
-
-	this_type& operator << (const unsigned long long ddwVal)
-	{
-		unsigned long long ddwTmp = htonll(ddwVal);
-		m_pkgData.append(reinterpret_cast<char*>(&ddwTmp),sizeof(unsigned long long));
-		return *this;
-	}
-	this_type& operator << (const long long ddwVal)
-	{
-		long long ddwTmp = htonll(ddwVal);
-		m_pkgData.append(reinterpret_cast<char*>(&ddwTmp),sizeof(long long));
-		return *this;
-	}
-
-
-    this_type& operator << (const unsigned long dwVal)
-	{
-		unsigned long dwTmp = htonl(dwVal);
-		m_pkgData.append(reinterpret_cast<char*>(&dwTmp),sizeof(unsigned long));
-		return *this;
-	}
-	this_type& operator << (const long dwVal)
-	{
-		long dwTmp = htonl(dwVal);
-		m_pkgData.append(reinterpret_cast<char*>(&dwTmp),sizeof(long));
-		return *this;
-	}
-	#endif
 
 	this_type& operator << (const int iVal)
 	{
@@ -241,7 +307,79 @@ public:
 		return *this;
 	}
 
+	this_type& operator << (const unsigned long long ddwVal)
+	{
+		unsigned long long ddwTmp = htonll(ddwVal);
+		m_pkgData.append(reinterpret_cast<char*>(&ddwTmp),sizeof(unsigned long long));
+		return *this;
+	}
+	this_type& operator << (const long long ddwVal)
+	{
+		long long ddwTmp = htonll(ddwVal);
+		m_pkgData.append(reinterpret_cast<char*>(&ddwTmp),sizeof(long long));
+		return *this;
+	}
+
+
+#ifdef __x86_64__
+
+	this_type& operator << (const unsigned long ddwVal)
+	{
+		unsigned long ddwTmp = htonll(ddwVal);
+		m_pkgData.append(reinterpret_cast<char*>(&ddwTmp),sizeof(unsigned long));
+		return *this;
+	}
+	this_type& operator << (const long ddwVal)
+	{
+		long ddwTmp = htonll(ddwVal);
+		m_pkgData.append(reinterpret_cast<char*>(&ddwTmp),sizeof(long));
+		return *this;
+	}
+#else
+
+	this_type& operator << (const unsigned long dwVal)
+	{
+		unsigned long dwTmp = htonl(dwVal);
+		m_pkgData.append(reinterpret_cast<char*>(&dwTmp),sizeof(unsigned long));
+		return *this;
+	}
+	this_type& operator << (const long dwVal)
+	{
+		long dwTmp = htonl(dwVal);
+		m_pkgData.append(reinterpret_cast<char*>(&dwTmp),sizeof(long));
+		return *this;
+	}
+#endif
+
 	//=============读数据开始=================
+
+	this_type& operator >> (unsigned char& ucVal)
+	{
+		if (sizeof(unsigned char) <= (m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))
+		{
+			memcpy(&ucVal,m_pkgData.data()+sizeof(PKG_HEAD)+m_iPos,sizeof(ucVal));
+		}
+		else
+		{
+			throw Error("data error:no enough buf.");
+		}
+		m_iPos += static_cast<int>(sizeof(unsigned char));
+		return *this;
+	}
+	this_type& operator >> (char& cVal)
+	{
+		if (sizeof(char) <= (m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))
+		{
+			memcpy(&cVal,m_pkgData.data()+sizeof(PKG_HEAD)+m_iPos,sizeof(cVal));
+		}
+		else
+		{
+			throw Error("data error:no enough buf.");
+		}
+		m_iPos += static_cast<int>(sizeof(char));
+		return *this;
+	}
+
 
 	this_type& operator >> (unsigned short& wVal)
 	{
@@ -271,128 +409,6 @@ public:
 		m_iPos += static_cast<int>(sizeof(short));
 		return *this;
 	}
-
-#ifdef __x86_64__
-
-	this_type& operator >> (unsigned long long& ddwVal)
-	{
-		if (sizeof(unsigned long long) <= (m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))
-		{
-			memcpy(&ddwVal,m_pkgData.data()+sizeof(PKG_HEAD)+m_iPos,sizeof(ddwVal));
-			ddwVal = ntohll(ddwVal);
-		}
-		else
-		{
-			throw Error("data error:no enough buf.");
-		}
-		m_iPos += static_cast<int>(sizeof(unsigned long long));
-		return *this;
-	}
-	this_type& operator >> (long long& ddwVal)
-	{
-		if (sizeof(long long) <= (m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))
-		{
-			memcpy(&ddwVal,m_pkgData.data()+sizeof(PKG_HEAD)+m_iPos,sizeof(ddwVal));
-			ddwVal = ntohll(ddwVal);
-		}
-		else
-		{
-			throw Error("data error:no enough buf.");
-		}
-		m_iPos += static_cast<int>(sizeof(long));
-		return *this;
-	}
-
-	this_type& operator >> (unsigned long& ddwVal)
-	{
-		if (sizeof(unsigned long) <= (m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))
-		{
-			memcpy(&ddwVal,m_pkgData.data()+sizeof(PKG_HEAD)+m_iPos,sizeof(ddwVal));
-			ddwVal = ntohll(ddwVal);
-		}
-		else
-		{
-			throw Error("data error:no enough buf.");
-		}
-		m_iPos += static_cast<int>(sizeof(unsigned long));
-		return *this;
-	}
-	this_type& operator >> (long& ddwVal)
-	{
-		if (sizeof(long) <= (m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))
-		{
-			memcpy(&ddwVal,m_pkgData.data()+sizeof(PKG_HEAD)+m_iPos,sizeof(ddwVal));
-			ddwVal = ntohll(ddwVal);
-		}
-		else
-		{
-			throw Error("data error:no enough buf.");
-		}
-		m_iPos += static_cast<int>(sizeof(long));
-		return *this;
-	}
-
-#else
-
-	this_type& operator >> (unsigned long long& ddwVal)
-	{
-		if (sizeof(unsigned long long) <= (m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))
-		{
-			memcpy(&ddwVal,m_pkgData.data()+sizeof(PKG_HEAD)+m_iPos,sizeof(ddwVal));
-			ddwVal = ntohll(ddwVal);
-		}
-		else
-		{
-			throw Error("data error:no enough buf.");
-		}
-		m_iPos += static_cast<int>(sizeof(unsigned long long));
-		return *this;
-	}
-	this_type& operator >> (long long& ddwVal)
-	{
-		if (sizeof(long long) <= (m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))
-		{
-			memcpy(&ddwVal,m_pkgData.data()+sizeof(PKG_HEAD)+m_iPos,sizeof(ddwVal));
-			ddwVal = ntohll(ddwVal);
-		}
-		else
-		{
-			throw Error("data error:no enough buf.");
-		}
-		m_iPos += static_cast<int>(sizeof(long));
-		return *this;
-	}
-
-
-	this_type& operator >> (unsigned long& dwVal)
-	{
-		if (sizeof(unsigned long) <= (m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))
-		{
-			memcpy(&dwVal,m_pkgData.data()+sizeof(PKG_HEAD)+m_iPos,sizeof(dwVal));
-			dwVal = ntohl(dwVal);
-		}
-		else
-		{
-			throw Error("data error:no enough buf.");
-		}
-		m_iPos += static_cast<int>(sizeof(unsigned long));
-		return *this;
-	}
-	this_type& operator >> (long& dwVal)
-	{
-		if (sizeof(long) <= (m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))
-		{
-			memcpy(&dwVal,m_pkgData.data()+sizeof(PKG_HEAD)+m_iPos,sizeof(dwVal));
-			dwVal = ntohl(dwVal);
-		}
-		else
-		{
-			throw Error("data error:no enough buf.");
-		}
-		m_iPos += static_cast<int>(sizeof(long));
-		return *this;
-	}
-#endif
 
 
 	this_type& operator >> (unsigned int& uiVal)
@@ -424,6 +440,97 @@ public:
 		return *this;
 	}
 
+	this_type& operator >> (unsigned long long& ddwVal)
+	{
+		if (sizeof(unsigned long long) <= (m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))
+		{
+			memcpy(&ddwVal,m_pkgData.data()+sizeof(PKG_HEAD)+m_iPos,sizeof(ddwVal));
+			ddwVal = ntohll(ddwVal);
+		}
+		else
+		{
+			throw Error("data error:no enough buf.");
+		}
+		m_iPos += static_cast<int>(sizeof(unsigned long long));
+		return *this;
+	}
+	this_type& operator >> (long long& ddwVal)
+	{
+		if (sizeof(long long) <= (m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))
+		{
+			memcpy(&ddwVal,m_pkgData.data()+sizeof(PKG_HEAD)+m_iPos,sizeof(ddwVal));
+			ddwVal = ntohll(ddwVal);
+		}
+		else
+		{
+			throw Error("data error:no enough buf.");
+		}
+		m_iPos += static_cast<int>(sizeof(long long));
+		return *this;
+	}
+
+
+#ifdef __x86_64__
+	this_type& operator >> (unsigned long& ddwVal)
+	{
+		if (sizeof(unsigned long) <= (m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))
+		{
+			memcpy(&ddwVal,m_pkgData.data()+sizeof(PKG_HEAD)+m_iPos,sizeof(ddwVal));
+			ddwVal = ntohll(ddwVal);
+		}
+		else
+		{
+			throw Error("data error:no enough buf.");
+		}
+		m_iPos += static_cast<int>(sizeof(unsigned long));
+		return *this;
+	}
+	this_type& operator >> (long& ddwVal)
+	{
+		if (sizeof(long) <= (m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))
+		{
+			memcpy(&ddwVal,m_pkgData.data()+sizeof(PKG_HEAD)+m_iPos,sizeof(ddwVal));
+			ddwVal = ntohll(ddwVal);
+		}
+		else
+		{
+			throw Error("data error:no enough buf.");
+		}
+		m_iPos += static_cast<int>(sizeof(long));
+		return *this;
+	}
+
+#else
+
+	this_type& operator >> (unsigned long& dwVal)
+	{
+		if (sizeof(unsigned long) <= (m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))
+		{
+			memcpy(&dwVal,m_pkgData.data()+sizeof(PKG_HEAD)+m_iPos,sizeof(dwVal));
+			dwVal = ntohl(dwVal);
+		}
+		else
+		{
+			throw Error("data error:no enough buf.");
+		}
+		m_iPos += static_cast<int>(sizeof(unsigned long));
+		return *this;
+	}
+	this_type& operator >> (long& dwVal)
+	{
+		if (sizeof(long) <= (m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))
+		{
+			memcpy(&dwVal,m_pkgData.data()+sizeof(PKG_HEAD)+m_iPos,sizeof(dwVal));
+			dwVal = ntohl(dwVal);
+		}
+		else
+		{
+			throw Error("data error:no enough buf.");
+		}
+		m_iPos += static_cast<int>(sizeof(long));
+		return *this;
+	}
+#endif
 
 	void read(char* pszBuf,const int iReadLen)
 	{
@@ -487,10 +594,10 @@ public:
 	}
 
 	void readString4(std::string& sData){
-		unsigned char dwLen = 0;
+
 		if ( 4 <= static_cast<int>(m_pkgData.size()-sizeof(PKG_HEAD)-m_iPos))
 		{
-			unsigned long dwLen = ntohl(*(unsigned long*)(m_pkgData.data()+sizeof(PKG_HEAD)+m_iPos));
+			unsigned int dwLen = ntohl(*(unsigned int*)(m_pkgData.data()+sizeof(PKG_HEAD)+m_iPos));
 			m_iPos += 4;
 			read(sData, dwLen);
 		}
