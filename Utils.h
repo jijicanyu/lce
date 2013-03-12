@@ -28,7 +28,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <fcntl.h>
-
+#include <netinet/tcp.h>
 #include <string>
 #include <map>
 #include <vector>
@@ -57,7 +57,8 @@ namespace lce
     int listen(int iFd);
 
 	int setNBlock(int iFd);
-
+	
+	int setNODelay(int iFd);
 
 	int close(const int iFd);
 
