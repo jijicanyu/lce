@@ -187,10 +187,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\CFIFOBuffer.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\CFileLog.cpp"
 				>
 			</File>
@@ -242,14 +238,6 @@
 			</File>
 			<File
 				RelativePath=".\CEvent.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CFIFOBuffer.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CFIFOBufferByHead.h"
 				>
 			</File>
 			<File
