@@ -46,7 +46,7 @@ public:
 
         pstRequest->stSession=stSession;
         /*
-	pstRequest->oParser.setData(pszData,iSize);
+		pstRequest->oParser.setData(pszData,iSize);
 
 		string sfile1 = pstRequest->oParser.getFile("file1");
 		cout<<sfile1<<endl;
@@ -64,8 +64,9 @@ public:
 
 		string sfilename2 = pstRequest->oParser.getFileName("file2");
 		cout<<sfilename2<<endl;
-	*/	
-	/*
+		*/	
+		
+		/*
         pstRequest->oResponse.begin();
         pstRequest->oResponse.setStatusCode(200);
         pstRequest->oResponse<<"Hello world";
@@ -74,12 +75,13 @@ public:
         delete pstRequest;
 		*/
 		
+
+
+		//cout<<"onRead" <<endl;
         if(CProCenter::getInstance().dispatch(100,pstRequest)< 0)
 		{
 			cout<<CProCenter::getInstance().getErrMsg()<<endl;
 		}
-		//CProCenter::getInstance().dispatch()
-
 
     }
 
@@ -89,7 +91,7 @@ public:
 
 		//cout<<"type="<<iTaskType<<endl;
         //cout<<"index"<< iIndex<<endl;
-	SRequest *pstRequest=(SRequest*)pData;
+		SRequest *pstRequest=(SRequest*)pData;
 
         pstRequest->oResponse.begin();
         pstRequest->oResponse.setStatusCode(200);
@@ -103,8 +105,9 @@ public:
 
 
 
-    void onMessage(uint32_t dwMsgType,void *pData)
+    void onMessage(int dwMsgType,void *pData)
     {
+		//cout<<"onMessage"<<endl;
 		dwOutCount++;
         SRequest *pstRequest=(SRequest*)pData;
         CCommMgr::getInstance().write(pstRequest->stSession,pstRequest->oResponse.data(),pstRequest->oResponse.size(),true);
@@ -130,7 +133,7 @@ public:
 		cout<<szErrMsg<<endl;
 	}
 
-	void onTimer(uint32_t dwTimerId,void *pData)
+	void onTimer(int dwTimerId,void *pData)
 	{
 
 		CCommMgr::getInstance().addTimer(dwTimerId,5000,this,pData);
@@ -150,12 +153,6 @@ public:
 			{
 				cout<<"stopping..."<<endl;
 				CCommMgr::getInstance().stop();
-				exit(0);
-			}
-			break;
-			case SIGHUP:
-			{
-				cout<<"sighup"<<endl;
 				exit(0);
 			}
 			break;
@@ -213,7 +210,7 @@ int main()
 	oPkg>>b;
 
 
-    CProCenter::getInstance().init(8,50000);
+    CProCenter::getInstance().init(2,50000);
     CProCenter::getInstance().run();
 
     if(CCommMgr::getInstance().init(50000) < 0)

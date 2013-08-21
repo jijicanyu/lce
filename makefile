@@ -2,7 +2,7 @@
 CXX        = g++
 #CFLAGS     = -g -O -Wall #-DDEBUG]
 #CFLAGS = -Wall  -O2 -DDEBUG
-CFLAGS     = -g  -Wall -Wno-deprecated -DNDEBUG
+CFLAGS     = -g  -Wall -DNDEBUG
 
 
 OBJECT = CCommMgr.o CConfig.o CEvent.o CLog.o  CThread.o Utils.o CFileLog.o CHttpParser.o  CHttpResponse.o CTask.o CAnyValue.o

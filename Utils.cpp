@@ -29,10 +29,20 @@ int setNBlock(int iFd)
 }
 
 
-int setNODelay(int iFd)
+int setNDelay(int iFd)
 {
 	int yes = 1;
 	if(setsockopt(iFd,IPPROTO_TCP,TCP_NODELAY,(char*)&yes,sizeof(int)) !=0)
+	{
+		return -1;
+	}
+	return 0;
+}
+
+int setSocketBufSize(int iFd,int iOpt,uint32_t dwBufSize)
+{
+
+	if (setsockopt(iFd, SOL_SOCKET, iOpt, (char*)&dwBufSize, sizeof(dwBufSize)) == -1) 
 	{
 		return -1;
 	}
@@ -44,7 +54,7 @@ int close(const int iFd)
     return ::close(iFd);
 }
 
-int setNCloseWait(const int iFd)
+int setReUseAddr(const int iFd)
 {
     // 如果服务器终止后,服务器可以第二次快速启动而不用等待一段时间
     int nREUSEADDR = 1;
@@ -119,43 +129,6 @@ int sendto(int iFd,const char *buf,int count,const std::string &sIp,uint16_t wPo
     return ::sendto(iFd,buf,count,0,(struct sockaddr *)&remote_addr,sizeof(struct sockaddr));
 }
 
-
-//去掉字符串2头的空格
-std::string& trimString(std::string& sSource)
-{
-    if (sSource.size()==0)
-        return sSource;
-
-    std::string sDest = "";
-
-    size_t i = 0;
-    for(; i < sSource.size() &&
-            (sSource[i] == ' '  ||
-             sSource[i] == '\r'  ||
-             sSource[i] == '\n'  ||
-             sSource[i] == '\t'); i++);
-
-    size_t j = sSource.size() - 1;
-    if(j > 0)
-    {
-        for(; j > 0 &&
-                (sSource[j] == ' '   ||
-                 sSource[j] == '\r'  ||
-                 sSource[j] == '\n'  ||
-                 sSource[j] == '\t')
-                ; j--);
-    }
-
-    if(j >= i)
-    {
-        sDest = sSource.substr(i, j-i+1);
-        sSource = sDest;
-    }
-    else
-        sSource = "";
-    return sSource;
-}
-
 void initDaemon()
 {
     pid_t pid;
@@ -184,7 +157,7 @@ void initDaemon()
     umask(0);
 }
 
-bool setFileLimit(const uint32_t dwLimit)
+bool setFileLimit(const size_t dwLimit)
 {
     bool bOK = false;
     struct rlimit rlim = {0};
@@ -208,7 +181,7 @@ bool setFileLimit(const uint32_t dwLimit)
     return bOK;
 }
 
-bool setCoreLimit(const uint32_t dwLimit)
+bool setCoreLimit(const size_t dwLimit)
 {
     bool bOK = false;
     struct rlimit rlim = {0};
@@ -541,7 +514,7 @@ std::string formUrlDecode(const std::string &sSrc)
             int iChNum;
             szTmpStr[3] = sSrc.at(j+1);
             szTmpStr[4] = sSrc.at(j+2);
-            iChNum = strtol(szTmpStr, NULL, 16);
+            iChNum = strtol(szTmpStr,0, 16);
             sResult += iChNum;
             i += 2;
         }
@@ -553,22 +526,6 @@ std::string formUrlDecode(const std::string &sSrc)
 
     return sResult;
 
-}
-
-std::string charToHex(char c)
-{
-    std::string sResult;
-    char first, second;
-
-    first = (c & 0xF0) / 16;
-    first += first > 9 ? 'A' - 10 : '0';
-    second = c & 0x0F;
-    second += second > 9 ? 'A' - 10 : '0';
-
-    sResult.append(1, first);
-    sResult.append(1, second);
-
-    return sResult;
 }
 
 };
