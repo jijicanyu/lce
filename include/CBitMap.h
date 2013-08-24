@@ -28,7 +28,7 @@ namespace lce
 			//create shm
 			if ( m_oShm.getShmID() <= 0 || !m_oShm.attach() )
 			{
-				if ( !m_oShm.create(iShmKey, (int)dwShmSize, bCreate, bReadOnly) )
+				if ( !m_oShm.create(iShmKey, dwShmSize, bCreate, bReadOnly) )
 				{
 					snprintf(m_szErrMsg, sizeof(m_szErrMsg), "shm init create error: %s", m_oShm.getErrMsg());
 					return false;
@@ -127,7 +127,7 @@ namespace lce
 			//create shm
 			if ( m_oShm.getShmID() <= 0 || !m_oShm.attach() )
 			{
-				if ( !m_oShm.create(iShmKey, (int)dwShmSize, bCreate, bReadOnly) )
+				if ( !m_oShm.create(iShmKey,dwShmSize, bCreate, bReadOnly) )
 				{
 					snprintf(m_szErrMsg, sizeof(m_szErrMsg), "shm init create error: %s", m_oShm.getErrMsg());
 					return false;
@@ -224,7 +224,7 @@ namespace lce
 			//create shm
 			if ( m_oShm.getShmID() <= 0 || !m_oShm.attach() )
 			{
-				if ( !m_oShm.create(iShmKey, (int)dwShmSize, bCreate, bReadOnly) )
+				if ( !m_oShm.create(iShmKey, dwShmSize, bCreate, bReadOnly) )
 				{
 					snprintf(m_szErrMsg, sizeof(m_szErrMsg), "shm init create error: %s", m_oShm.getErrMsg());
 					return false;
@@ -319,7 +319,7 @@ namespace lce
 			//create shm
 			if ( m_oShm.getShmID() <= 0 || !m_oShm.attach() )
 			{
-				if ( !m_oShm.create(iShmKey, (int)dwShmSize, bCreate, bReadOnly) )
+				if ( !m_oShm.create(iShmKey, dwShmSize, bCreate, bReadOnly) )
 				{
 					snprintf(m_szErrMsg, sizeof(m_szErrMsg), "shm init create error: %s", m_oShm.getErrMsg());
 					return false;
@@ -416,7 +416,7 @@ namespace lce
 			//create shm
 			if ( m_oShm.getShmID() <= 0 || !m_oShm.attach() )
 			{
-				if ( !m_oShm.create(iShmKey, (int)dwShmSize, bCreate, bReadOnly) )
+				if ( !m_oShm.create(iShmKey, dwShmSize, bCreate, bReadOnly) )
 				{
 					snprintf(m_szErrMsg, sizeof(m_szErrMsg), "shm init create error: %s", m_oShm.getErrMsg());
 					return false;
@@ -513,7 +513,7 @@ namespace lce
 			//create shm
 			if ( m_oShm.getShmID() <= 0 || !m_oShm.attach() )
 			{
-				if ( !m_oShm.create(iShmKey, (int)dwShmSize, bCreate, bReadOnly) )
+				if ( !m_oShm.create(iShmKey, dwShmSize, bCreate, bReadOnly) )
 				{
 					snprintf(m_szErrMsg, sizeof(m_szErrMsg), "shm init create error: %s", m_oShm.getErrMsg());
 					return false;
@@ -609,7 +609,7 @@ namespace lce
 			//create shm
 			if ( m_oShm.getShmID() <= 0 || !m_oShm.attach() )
 			{
-				if ( !m_oShm.create(iShmKey, (int)dwShmSize, bCreate, bReadOnly) )
+				if ( !m_oShm.create(iShmKey, dwShmSize, bCreate, bReadOnly) )
 				{
 					snprintf(m_szErrMsg, sizeof(m_szErrMsg), "shm init create error: %s", m_oShm.getErrMsg());
 					return false;

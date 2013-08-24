@@ -1,3 +1,3 @@
 #!/bin/sh
 
-g++ -oanyvalue Test_CAnyValue.cpp  ../CAnyValue.cpp
+g++ -g -oanyvalue Test_CAnyValue.cpp 

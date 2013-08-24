@@ -38,6 +38,7 @@ class CHttpResponse
 	};
 	typedef std::map<string, SCookieInfo> MAP_COOKIE;
 
+	typedef std::map<string,string > MAP_HEAD;
 public:
 	CHttpResponse(void)
 	{
@@ -65,7 +66,7 @@ public:
 
 	inline void setCookie(const string& sName,const string& sValue,const string& sDomain="",const string& sPath="",const time_t dwCookieTime=0);
 	void setStatusCode(const int iStatus) {	m_iStatusCode = iStatus;	}
-	void setConnection(const string& sConn="close")	{	m_sConnection = sConn; }
+	void setConnection(const string& sConn="Close")	{	m_sConnection = sConn; }
 	void setContentType(const string& sData="text/html"){	m_sContentType=sData;	}
 	void setCacheControl(const string& sCacheCtl) {	m_sCacheControl = sCacheCtl;	}
 	void setBodyLen(const unsigned long dwLen) { m_dwSetBodyLen = dwLen;	}
@@ -73,6 +74,7 @@ public:
 	void setLastModified(const time_t dwTime) {	m_dwLastModified = dwTime;	}
 	void setExpires(const time_t dwTime)	{	m_dwExpiresTime = dwTime;	}
 	void setETag(const std::string& sETag)	{	m_sETag = sETag;	}
+	void setHead(const std::string &sName,const std::string &sValue);
 	inline void end();
 
 	const char* data() const {	return m_sSendData.c_str();	}
@@ -107,6 +109,7 @@ public:
 
 private:
 	MAP_COOKIE m_mapCookie;
+	MAP_HEAD m_mapHead;
 	string m_sBodyContent;
 	string m_sSendData;
 	int m_iStatusCode;
@@ -120,6 +123,10 @@ private:
 	unsigned long m_dwSetBodyLen;
 };
 
+void CHttpResponse::setHead(const std::string &sName,const std::string &sValue)
+{
+	m_mapHead[sName] = sValue;
+}
 
 
  void CHttpResponse::setCookie(const string& sName,const string& sValue,const string& sDomain,const string& sPath,const time_t dwCookieTime)

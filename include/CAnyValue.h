@@ -8,10 +8,11 @@
 #include <vector>
 #include <algorithm>
 #include <memory.h>
-#include <assert.h>
 #include <iostream>
 #include <deque>
 #include <stdint.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <netinet/in.h>
 #include <math.h>
 #include <sstream>
@@ -32,7 +33,7 @@ namespace lce
 #endif
 #endif
 
-#define MAX_VALUE_TYPE = 13
+#define MAX_VALUE_TYPE = 17
 
 struct DType
 {
@@ -53,15 +54,11 @@ struct DType
         Float       = 10,       /// 浮点 数
         Bool        = 11,       ///布尔
         Null        = 12,        ///空
-    };
-};
-
-struct EncodeType
-{
-    enum ENCODETYPE
-    {
-        NORMAL,		//正常编码
-        TYPE1,		//优化编码
+		SInteger1	= 13,		///< tiny int value (1字节)
+		SInteger2	= 14,		///< small int value (2字节)
+		SInteger4	= 15,		///< signed integer value(int32)(4字节)
+		SInteger8	= 16,		///< signed integer value(int32)(4字节)
+		SInteger    = SInteger8,
     };
 };
 
@@ -156,7 +153,6 @@ public:
                 if (NULL != rhs.m_pData)
                 {
                     m_pData = new char[m_dwSize];
-                    assert( NULL != m_pData );
                     memcpy(m_pData, rhs.m_pData, m_dwSize);
                 }
             }
@@ -180,7 +176,6 @@ public:
         if (bDeepCopy)
         {
             m_pData = new char[dwSize];
-            assert( NULL != m_pData );
             memcpy(m_pData, pData, dwSize);
         }
         else
@@ -260,7 +255,6 @@ public:
         MapType* map;
     };
 
-    typedef void (*ENCODE_FUNC)(std::string&, const ValueHolder&);
     typedef void (*DECODE_FUNC)(size_t& , const char* , const size_t , this_type& );
 
 public:
@@ -291,6 +285,7 @@ public:
         ,m_bHasData(cValue==0?false:true)
     {
         init();
+		m_ucType = cValue < 0 ? DType::SInteger:DType::Integer;
         m_value.integer = cValue;
     }
 
@@ -301,6 +296,7 @@ public:
         ,m_bHasData(ucValue==0?false:true)
     {
         init();
+		m_ucType = ucValue < 0 ? DType::SInteger:DType::Integer;
         m_value.integer = ucValue;
     }
     CAnyValue(const unsigned short wValue)
@@ -310,6 +306,7 @@ public:
         ,m_bHasData(wValue==0?false:true)
     {
         init();
+		m_ucType = wValue < 0 ? DType::SInteger:DType::Integer;
         m_value.integer = wValue;
     }
     CAnyValue(const short shValue)
@@ -319,6 +316,7 @@ public:
         ,m_bHasData(shValue==0?false:true)
     {
         init();
+		m_ucType = shValue < 0 ? DType::SInteger:DType::Integer;
         m_value.integer = shValue;
     }
 
@@ -329,6 +327,7 @@ public:
 		,m_bHasData(iValue==0?false:true)
 	{
 		init();
+		m_ucType = iValue < 0 ? DType::SInteger:DType::Integer;
 		m_value.integer = iValue;
 	}
 	CAnyValue(const unsigned int uiValue)
@@ -338,6 +337,7 @@ public:
 		,m_bHasData(uiValue==0?false:true)
 	{
 		init();
+		m_ucType = uiValue < 0 ? DType::SInteger:DType::Integer;
 		m_value.integer = uiValue;
 	}
 
@@ -350,6 +350,7 @@ public:
         ,m_bHasData(lValue==0?false:true)
     {
         init();
+		m_ucType = lValue < 0 ? DType::SInteger:DType::Integer;
         m_value.integer = lValue;
     }
     CAnyValue(const unsigned long ddwValue)
@@ -359,6 +360,7 @@ public:
         ,m_bHasData(ddwValue==0?false:true)
     {
         init();
+		m_ucType = ddwValue < 0 ? DType::SInteger:DType::Integer;
         m_value.integer = ddwValue;
     }
 
@@ -371,6 +373,7 @@ public:
 		,m_bHasData(lValue==0?false:true)
 	{
 		init();
+		m_ucType = lValue < 0 ? DType::SInteger:DType::Integer;
 		m_value.integer = lValue;
 	}
 	CAnyValue(const unsigned long dwValue)
@@ -380,6 +383,7 @@ public:
 		,m_bHasData(dwValue==0?false:true)
 	{
 		init();
+		m_ucType = dwValue < 0 ? DType::SInteger:DType::Integer;
 		m_value.integer = dwValue;
 	}
 
@@ -393,6 +397,7 @@ public:
 		,m_bHasData(ullValue==0?false:true)
 	{
 		init();
+		m_ucType = ullValue < 0 ? DType::SInteger:DType::Integer;
 		m_value.integer = ullValue;
 	}
 
@@ -403,6 +408,7 @@ public:
 		,m_bHasData(llValue==0?false:true)
 	{
 		init();
+		m_ucType = llValue < 0 ? DType::SInteger:DType::Integer;
 		m_value.integer = llValue;
 	}
 
@@ -445,8 +451,6 @@ public:
         {
             m_bHasData = true;
         }
-
-
     }
 
     CAnyValue(const std::string& sValue)
@@ -484,102 +488,102 @@ public:
 
     int asInt() const
     {
-        if ( DType::Integer == m_ucType || DType::Bool == m_ucType )	return static_cast<int>(m_value.integer);
+        if ( DType::Integer == m_ucType || DType::Bool == m_ucType || DType::SInteger == m_ucType )	return static_cast<int>(m_value.integer);
         return 0;
     }
 
 
 	int asInt64() const
 	{
-		if ( DType::Integer == m_ucType || DType::Bool == m_ucType )	return static_cast<int64_t>(m_value.integer);
+		if ( DType::Integer == m_ucType || DType::Bool == m_ucType  || DType::SInteger == m_ucType)	return static_cast<int64_t>(m_value.integer);
 		return 0;
 	}
 
     int asUInt() const
     {
-        if ( DType::Integer == m_ucType || DType::Bool == m_ucType  )	return static_cast<uint32_t>(m_value.integer);
+        if ( DType::Integer == m_ucType || DType::Bool == m_ucType  || DType::SInteger == m_ucType )	return static_cast<uint32_t>(m_value.integer);
         return 0;
     }
 
 	int asUInt64() const
 	{
-		if ( DType::Integer == m_ucType || DType::Bool == m_ucType  )	return static_cast<uint64_t>(m_value.integer);
+		if ( DType::Integer == m_ucType || DType::Bool == m_ucType  || DType::SInteger == m_ucType )	return static_cast<uint64_t>(m_value.integer);
 		return 0;
 	}
 
     bool asBool() const
     {
-        if ( DType::Integer == m_ucType || DType::Bool == m_ucType )	return m_value.integer==0 ? false : true;
+        if ( DType::Integer == m_ucType || DType::Bool == m_ucType  || DType::SInteger == m_ucType)	return m_value.integer == 0 ? false : true;
         return false;
     }
 
     std::string asString() const
     {
         if ( DType::String == m_ucType && NULL != m_value.buf  )		return std::string(m_value.buf->data(), m_value.buf->size());
-        return m_strNull;
+        return "";
     }
 
     operator unsigned long long() const
     {
-        if ( DType::Integer == m_ucType || DType::Bool == m_ucType )	return m_value.integer;
+        if ( DType::Integer == m_ucType || DType::Bool == m_ucType  || DType::SInteger == m_ucType)	return m_value.integer;
         return 0;
     }
     operator long long() const
     {
-        if ( DType::Integer == m_ucType || DType::Bool == m_ucType  )	return static_cast<long long>(m_value.integer);
+        if ( DType::Integer == m_ucType || DType::Bool == m_ucType   || DType::SInteger == m_ucType)	return static_cast<long long>(m_value.integer);
         return 0;
     }
 
 	operator char() const
 	{
-		if ( DType::Integer == m_ucType  || DType::Bool == m_ucType )	return static_cast<char>(m_value.integer);
+		if ( DType::Integer == m_ucType  || DType::Bool == m_ucType  || DType::SInteger == m_ucType)	return static_cast<char>(m_value.integer);
 		return 0;
 	}
 
     operator unsigned char() const
     {
-        if ( DType::Integer == m_ucType  || DType::Bool == m_ucType )	return static_cast<unsigned char>(m_value.integer);
+        if ( DType::Integer == m_ucType  || DType::Bool == m_ucType  || DType::SInteger == m_ucType)	return static_cast<unsigned char>(m_value.integer);
         return 0;
     }
 
     operator unsigned short() const
     {
-        if ( DType::Integer == m_ucType || DType::Bool == m_ucType  )	return static_cast<unsigned short>(m_value.integer);
+        if ( DType::Integer == m_ucType || DType::Bool == m_ucType  || DType::SInteger == m_ucType )	return static_cast<unsigned short>(m_value.integer);
         return 0;
     }
 
 	operator short() const
 	{
-		if ( DType::Integer == m_ucType  || DType::Bool == m_ucType )	return static_cast< short>(m_value.integer);
+		if ( DType::Integer == m_ucType  || DType::Bool == m_ucType  || DType::SInteger == m_ucType)	return static_cast< short>(m_value.integer);
 		return 0;
 	}
 
     operator unsigned long() const
     {
-        if ( DType::Integer == m_ucType || DType::Bool == m_ucType )	return static_cast<unsigned long>(m_value.integer);
+        if ( DType::Integer == m_ucType || DType::Bool == m_ucType  || DType::SInteger == m_ucType)	return static_cast<unsigned long>(m_value.integer);
         return 0;
     }
 
     operator long() const
     {
-        if ( DType::Integer == m_ucType || DType::Bool == m_ucType  )	return static_cast<long>(m_value.integer);
+        if ( DType::Integer == m_ucType || DType::Bool == m_ucType   || DType::SInteger == m_ucType)	return static_cast<long>(m_value.integer);
         return 0;
     }
 
 
     operator int() const
     {
-        if ( DType::Integer == m_ucType || DType::Bool == m_ucType  )	return static_cast<int>(m_value.integer);
+        if ( DType::Integer == m_ucType || DType::Bool == m_ucType  || DType::SInteger == m_ucType )	return static_cast<int>(m_value.integer);
         return 0;
     }
     operator unsigned int() const
     {
-        if ( DType::Integer == m_ucType || DType::Bool == m_ucType  )	return static_cast<unsigned int>(m_value.integer);
+        if ( DType::Integer == m_ucType || DType::Bool == m_ucType  || DType::SInteger == m_ucType )	return static_cast<unsigned int>(m_value.integer);
         return 0;
     }
     operator bool() const
     {
-        if ( DType::Integer == m_ucType ||DType::Bool == m_ucType )	return m_value.integer==0 ? false : true;
+        if ( DType::Integer == m_ucType ||DType::Bool == m_ucType  || DType::SInteger == m_ucType)	return m_value.integer==0 ? false : true;
         return false;
     }
 
@@ -591,15 +595,19 @@ public:
 
     operator std::string() const
     {
-        if ( DType::String == m_ucType && NULL != m_value.buf  )		return std::string(m_value.buf->data(), m_value.buf->size());
-        return m_strNull;
+        if ( DType::String == m_ucType && NULL != m_value.buf  )		
+			return std::string(m_value.buf->data(), m_value.buf->size());
+
+        return "";
     }
 
 
     const char *data() const
     {
-        if ( DType::String == m_ucType && NULL != m_value.buf  )		return m_value.buf->data();
-        return m_strNull.data();
+        if ( DType::String == m_ucType && NULL != m_value.buf  )		
+			return m_value.buf->data();
+
+        return NULL;
 
     }
 
@@ -613,7 +621,7 @@ public:
             }
             else
             {
-                assert(false);
+                return 0;
             }
         }
         else if ( m_ucType == DType::Vector )
@@ -621,14 +629,14 @@ public:
             if ( NULL != m_value.vec )
                 return m_value.vec->size();
             else
-                assert(false);
+                return 0;
         }
         else if ( m_ucType == DType::Map )
         {
             if ( NULL != m_value.map )
                 return m_value.map->size();
             else
-                assert(false);
+                return 0;
         }
         return 0;
     }
@@ -640,8 +648,9 @@ public:
         {
             if ( iIndex < (int)m_value.vec->size() )
                 return (*m_value.vec)[iIndex];
+			else throw Error("operator[inx]: index invalid");
         }
-        return m_null;
+		else throw Error("operator[inx]: type invalid");
     }
     CAnyValue& operator[](const int iIndex)
     {
@@ -652,18 +661,33 @@ public:
             else throw Error("operator[inx]: index invalid");
         }
         else throw Error("operator[inx]: type invalid");
-        //		return m_null;
     }
+	
     const CAnyValue& operator[](const std::string& sName) const
     {
+		static CAnyValue m_null;
         if ( (DType::Map == m_ucType) && NULL != m_value.map )
         {
             MapType::iterator it = m_value.map->find(sName);
             if ( it != m_value.map->end() )
                 return it->second;
         }
-        return m_null;
+		return m_null;
     }
+	
+	const CAnyValue& operator[](const char* pszName) const
+	{
+		static CAnyValue m_null;
+		std::string sName(pszName);
+		if ( (DType::Map == m_ucType) && NULL != m_value.map )
+		{
+			MapType::iterator it = m_value.map->find(sName);
+			if ( it != m_value.map->end() )
+				return it->second;
+		}
+		return m_null;
+	}
+
 
     CAnyValue& operator[](const std::string& sName)
     {
@@ -684,7 +708,8 @@ public:
         }
         return it->second;
     }
-
+	
+	
     CAnyValue& operator[](const char* pszName)
     {
         std::string sName(pszName);
@@ -704,7 +729,7 @@ public:
         }
         return it->second;
     }
-
+	
     bool hasKey(const std::string& sName) const
     {
         if ( (DType::Map == m_ucType) && NULL != m_value.map )
@@ -808,7 +833,7 @@ public:
         }
         else
         {
-            assert(false);
+            return;
         }
 
         memset(&m_value, 0, sizeof(m_value));
@@ -904,9 +929,22 @@ public:
             }
             else
             {
-                uint64_t ddwValue = atoll(sValue.c_str());
-                this->m_ucType = DType::Integer;
-                this->m_value.integer =ddwValue;
+				
+				this->m_ucType = sValue[0] == '-' ? DType::SInteger:DType::Integer;
+				
+				if(sValue[0] == '-')
+				{
+					int64_t ddwValue = atoll(sValue.c_str());
+					this->m_value.integer =ddwValue;
+					this->m_ucType = DType::SInteger;
+				}
+				else 
+				{
+					uint64_t ddwValue = strtoull(sValue.c_str(),0,10);
+					this->m_value.integer =ddwValue;
+					this->m_ucType = DType::Integer;
+
+				}
             }
 
         }
@@ -940,9 +978,16 @@ public:
             sBuf += toStr(m_value.integer);
         }
         break;
+		case DType::SInteger:
+		{
+			sBuf += toStr((int64_t)m_value.integer);
+		}
+		break;
         case DType::Float:
         {
-            sBuf += toStr(m_value.flValue);
+			char buffer[32];
+			snprintf(buffer,sizeof(buffer), "%#.16g", m_value.flValue);
+			sBuf += buffer;
         }
         break;
         case DType::String:
@@ -987,12 +1032,10 @@ public:
     }
 
     static std::vector<DECODE_FUNC> m_vecDecodeFuncs;
-    static const CAnyValue m_null;
-    static const std::string m_strNull;
 
 private:
 
-    static void check(const size_t dwPos, const size_t sDataSize)
+    static void inline check(const size_t dwPos, const size_t sDataSize)
     {
         if ( dwPos >  sDataSize )
         {
@@ -1001,19 +1044,17 @@ private:
     }
 
     template <class T>
-    static std::string toStr(const T &t)
+    static std::string inline toStr(const T &t)
     {
-
         std::stringstream stream;
-        stream.precision(20);
         stream<<t;
         return stream.str();
     }
 
-    static std::string textEncodeJSON(const std::string& sSrc)
+    static std::string textEncodeJSON(const char *sSrc,size_t iSize)
     {
         std::string sDesc;
-        for (std::string::size_type i=0; i<sSrc.size(); i++)
+        for (size_t i=0; i<iSize; i++)
         {
             if (sSrc[i] == '\"')
             {
@@ -1084,21 +1125,27 @@ public:
                 sBuf += "false";
         }
         break;
-
         case DType::Integer:
         {
             sBuf += toStr(m_value.integer);
         }
         break;
+		case DType::SInteger:
+		{
+			sBuf += toStr((int64_t)m_value.integer);
+		}
+		break;
         case DType::Float:
         {
-            sBuf += toStr(m_value.flValue);
+			char buffer[32];
+			snprintf(buffer,sizeof(buffer), "%#.16g", m_value.flValue);
+            sBuf += buffer;
         }
         break;
         case DType::String:
         {
             sBuf += "\"";
-            sBuf += textEncodeJSON(string(m_value.buf->data(), m_value.buf->size()));
+            sBuf += textEncodeJSON(m_value.buf->data(), m_value.buf->size());
             sBuf += "\"";
         }
         break;
@@ -1137,7 +1184,7 @@ public:
                 {
                     sBuf += ",\"";
                 }
-                sBuf += textEncodeJSON(string(it->first.data(), it->first.size()));
+                sBuf += textEncodeJSON(it->first.data(), it->first.size());
                 sBuf += "\":";
                 it->second.encodeJSON(sBuf);
             }
@@ -1199,6 +1246,40 @@ private:
         thisobj.m_value.integer = ntohll(*(uint64_t*)(pData+dwDecodePos));
         dwDecodePos += 8;
     }
+
+
+	static void decode_sinteger1(size_t& dwDecodePos, const char* pData, const size_t dwDataSize, this_type& thisobj)
+	{
+		thisobj.m_ucType = DType::SInteger;
+		check(dwDecodePos+1, dwDataSize);
+		thisobj.m_value.integer = (unsigned char)*(unsigned char*)(pData+dwDecodePos);
+		++dwDecodePos;
+
+	}
+	static void decode_sinteger2(size_t& dwDecodePos, const char* pData, const size_t dwDataSize, this_type& thisobj)
+	{
+		thisobj.m_ucType = DType::SInteger;
+		check(dwDecodePos+2, dwDataSize);
+		thisobj.m_value.integer = ntohs(*(unsigned short*)(pData+dwDecodePos));
+		dwDecodePos += 2;
+	}
+	static void decode_sinteger4(size_t& dwDecodePos, const char* pData, const size_t dwDataSize, this_type& thisobj)
+	{
+		thisobj.m_ucType = DType::SInteger;
+		check(dwDecodePos+4, dwDataSize);
+		thisobj.m_value.integer = ntohl(*(uint32_t*)(pData+dwDecodePos));
+		dwDecodePos += 4;
+	}
+	static void decode_sinteger8(size_t& dwDecodePos, const char* pData, const size_t dwDataSize, this_type& thisobj)
+	{
+		thisobj.m_ucType = DType::SInteger;
+		check(dwDecodePos+8, dwDataSize);
+		thisobj.m_value.integer = ntohll(*(uint64_t*)(pData+dwDecodePos));
+		dwDecodePos += 8;
+	}
+
+
+
     static void decode_string1(size_t& dwDecodePos, const char* pData, const size_t dwDataSize, this_type& thisobj)
     {
         thisobj.initAsBuf();
@@ -1237,12 +1318,10 @@ private:
         dwDecodePos += 4;
         while ( dwSize > 0 )
         {
-
             --dwSize;
             CAnyValue value;
-            value.decode(dwDecodePos, pData, dwDataSize);
-            thisobj.m_value.vec->push_back(value);
-
+			thisobj.m_value.vec->push_back(value);
+			(*thisobj.m_value.vec)[thisobj.m_value.vec->size()-1].decode(dwDecodePos, pData, dwDataSize);
         }
     }
     static void decode_map(size_t& dwDecodePos, const char* pData, const size_t dwDataSize, this_type& thisobj)
@@ -1262,9 +1341,9 @@ private:
             dwDecodePos += ucNameLen;
             if ( dwDataSize > dwDecodePos )
             {
-                CAnyValue value;
-                value.decode(dwDecodePos, pData, dwDataSize);
-                thisobj.m_value.map->insert( MapType::value_type(sName, value) );
+				CAnyValue value;
+				thisobj.m_value.map->insert(MapType::value_type(sName, value));
+				(*thisobj.m_value.map)[sName].decode(dwDecodePos, pData, dwDataSize);
             }
         }
     }
@@ -1280,18 +1359,11 @@ private:
     static void decode_float(size_t& dwDecodePos, const char* pData, const size_t dwDataSize, this_type& thisobj)
     {
 
-
         thisobj.m_ucType = DType::Float;
-        check(dwDecodePos+1, dwDataSize);
-        unsigned char ucStrLen = *(unsigned char*)(pData+dwDecodePos);
-        ++dwDecodePos;
-        check(dwDecodePos+ucStrLen, dwDataSize);
-
-        std::stringstream stream;
-        stream.write(pData+dwDecodePos,ucStrLen);
-        stream.precision(16);
-        stream>>thisobj.m_value.flValue;
-        dwDecodePos += ucStrLen;
+        check(dwDecodePos+8, dwDataSize);
+		
+		thisobj.m_value.flValue = (*(double*)(pData+dwDecodePos));
+		dwDecodePos+=8;
     }
 
     static inline std::string unicodeToUTF8(unsigned int cp)
@@ -1354,14 +1426,10 @@ private:
 				sOut+="Bad unicode escape sequence in string: hexadecimal digit expected. in "+sOut;
                 throw runtime_error(sOut.c_str());
             }
-
-
         }
-
     }
 
-
-    static void skipSpaces(int &dwPos,const char* szBuf,int iSize)
+    static inline void skipSpaces(int &dwPos,const char* szBuf,int iSize)
     {
         while(dwPos < iSize)
         {
@@ -1491,15 +1559,16 @@ private:
             {
                 dwPos++;
                 CAnyValue objValue;
-                readObj(dwPos,objValue,szBuf,iSize);
                 oValue.push_back(objValue);
+				readObj(dwPos,oValue[oValue.size()-1],szBuf,iSize);
             }
             else if (szBuf[dwPos] == '[')
             {
                 dwPos++;
                 CAnyValue arrayValue;
-                readArray(dwPos,arrayValue,szBuf,iSize);
-                oValue.push_back(arrayValue);
+				oValue.push_back(arrayValue);
+                readArray(dwPos,oValue[oValue.size()-1],szBuf,iSize);
+  
             }
             else if (szBuf[dwPos] == '"')
             {
@@ -1536,7 +1605,7 @@ private:
                 if(sValue != "null")
                     throw runtime_error("not a bool value");
 
-                oValue.push_back(CAnyValue::m_null);
+                oValue.push_back(CAnyValue());
                 dwPos+=4;
             }
             else if(szBuf[dwPos] == 'f')
@@ -1564,8 +1633,16 @@ private:
                 }
                 else
                 {
-                    uint64_t ddwValue = atoll(sValue.c_str());
-                    oValue.push_back(ddwValue);
+					if(sValue[0] == '-')
+					{
+						int64_t ddwValue = atoll(sValue.c_str());
+						oValue.push_back(ddwValue);
+					}
+					else 
+					{
+						uint64_t ddwValue = strtoull(sValue.c_str(),0,10);
+						oValue.push_back(ddwValue);
+					}
                 }
 
             }
@@ -1633,16 +1710,14 @@ private:
                 else if(szBuf[dwPos] == '{')
                 {
                     dwPos++;
-                    CAnyValue objValue;
-                    readObj(dwPos,objValue,szBuf,iSize);
-                    oValue[sKey] = objValue;
+                    CAnyValue &objValue = oValue[sKey];
+	                readObj(dwPos,objValue,szBuf,iSize);
                 }
                 else if(szBuf[dwPos] == '[')
                 {
                     dwPos++;
-                    CAnyValue arrayValue;
+                    CAnyValue &arrayValue = oValue[sKey];
                     readArray(dwPos,arrayValue,szBuf,iSize);
-                    oValue[sKey] = arrayValue;
                 }
                 else if(szBuf[dwPos] == 't')
                 {
@@ -1663,7 +1738,7 @@ private:
 						throw runtime_error(sOut.c_str());
                     }
 
-                    oValue[sKey]=true;
+                    oValue[sKey] = true;
                     dwPos+=4;
                 }
                 else if(szBuf[dwPos] == 'n')
@@ -1705,8 +1780,17 @@ private:
                     }
                     else
                     {
-                        uint64_t ddwValue = atoll(sValue.c_str());
-                        oValue[sKey]=ddwValue;
+
+						if(sValue[0] == '-')
+						{
+							int64_t ddwValue = atoll(sValue.c_str());
+							oValue[sKey]=ddwValue;
+						}
+						else 
+						{
+							uint64_t ddwValue = strtoull(sValue.c_str(),0,10);
+							oValue[sKey]=ddwValue;
+						}
                     }
 
                 }
@@ -1746,6 +1830,7 @@ private:
 
     static void encode_integer(std::string& sBuf, const ValueHolder& value)
     {
+
         if ( value.integer < 0xFF )
         {
             sBuf.push_back((char)DType::Integer1);
@@ -1757,7 +1842,7 @@ private:
             unsigned short wTmp = htons(static_cast<unsigned short>(value.integer));
             sBuf.append(reinterpret_cast<char*>(&wTmp),sizeof(wTmp));
         }
-        else if ( value.integer <= 0xFFFFFFFF )
+        else if (value.integer <= 0xFFFFFFFF )
         {
             sBuf.push_back((char)DType::Integer4);
             uint32_t dwTmp = htonl(static_cast<uint32_t>(value.integer));
@@ -1771,6 +1856,34 @@ private:
         }
     }
 
+	static void encode_sinteger(std::string& sBuf, const ValueHolder& value)
+	{
+
+		if ( value.integer < 0xFF )
+		{
+			sBuf.push_back((char)DType::SInteger1);
+			sBuf.push_back((char)value.integer);
+		}
+		else if ( value.integer <= 0xFFFF )
+		{
+			sBuf.push_back((char)DType::SInteger2);
+			unsigned short wTmp = htons(static_cast<unsigned short>(value.integer));
+			sBuf.append(reinterpret_cast<char*>(&wTmp),sizeof(wTmp));
+		}
+		else if (value.integer <= 0xFFFFFFFF )
+		{
+			sBuf.push_back((char)DType::SInteger4);
+			uint32_t dwTmp = htonl(static_cast<uint32_t>(value.integer));
+			sBuf.append(reinterpret_cast<char*>(&dwTmp),sizeof(dwTmp));
+		}
+		else
+		{
+			sBuf.push_back((char)DType::SInteger8);
+			uint64_t ui64Tmp = htonll(value.integer);
+			sBuf.append(reinterpret_cast<char*>(&ui64Tmp),sizeof(ui64Tmp));
+		}
+	}
+
     static void encode_bool(std::string& sBuf, const ValueHolder& value)
     {
         sBuf.push_back((char)DType::Bool);
@@ -1781,10 +1894,8 @@ private:
     {
 
         sBuf.push_back((char)DType::Float);
-
-        string sValue = toStr(value.flValue);
-        sBuf += static_cast<char>(sValue.size());
-        sBuf.append(sValue.data(),sValue.size());
+		double flValue = value.flValue;
+        sBuf.append(reinterpret_cast<char*>(&flValue),sizeof(double));
     }
 
 
@@ -1845,6 +1956,23 @@ private:
         sBuf.push_back((char)DType::Null);
     }
 
+	void decode(size_t& dwDecodePos, const char* pData, const size_t dwDataSize)
+	{
+		static DECODE_FUNC arDecodeFunc[17] = {&decode_integer1, &decode_integer2, &decode_integer4, &decode_integer8,&decode_string1,
+			&decode_string2, &decode_string4, &decode_vector, &decode_map,  &decode_ext, &decode_float,&decode_bool,&decode_null,
+			&decode_sinteger1,&decode_sinteger2,&decode_sinteger4,&decode_sinteger8
+
+		};
+		check(dwDecodePos+1, dwDataSize);
+		m_ucSubType = *(pData+dwDecodePos);
+		dwDecodePos++;
+
+		if ( m_ucSubType< 17 )
+		{
+			arDecodeFunc[m_ucSubType](dwDecodePos, pData, dwDataSize, *this);
+		}
+	}
+
 public:
 
 	void decode(const unsigned char* pData, const size_t dwDataSize)
@@ -1858,22 +1986,7 @@ public:
 		this->decode(dwDecodePos,(char*)pData, dwDataSize);
 	}
 
-	void decode(size_t& dwDecodePos, const char* pData, const size_t dwDataSize)
-	{
-		static DECODE_FUNC arDecodeFunc[13] = {&decode_integer1, &decode_integer2, &decode_integer4, &decode_integer8,&decode_string1,
-			&decode_string2, &decode_string4, &decode_vector, &decode_map,  &decode_ext, &decode_float,&decode_bool,&decode_null
-		};
-		check(dwDecodePos+1, dwDataSize);
-		m_ucSubType = *(pData+dwDecodePos);
-		dwDecodePos++;
-
-		if ( m_ucSubType< 13 )
-		{
-			arDecodeFunc[m_ucSubType](dwDecodePos, pData, dwDataSize, *this);
-		}
-	}
-
-    void encode(std::string& sBuf)
+	void encode(std::string& sBuf)
     {
 
         switch(m_ucType)
@@ -1885,6 +1998,9 @@ public:
         case DType::Integer:
             encode_integer(sBuf, m_value);
             break;
+		case DType::SInteger:
+			encode_sinteger(sBuf, m_value);
+			break;
         case DType::Float:
             encode_float(sBuf, m_value);
             break;
@@ -1923,7 +2039,6 @@ private:
     void initAsMap()
     {
         init();
-        assert(DType::Null==m_ucType || DType::Map==m_ucType);
         if ( DType::Null==m_ucType || DType::Map==m_ucType )
         {
             if ( NULL == m_value.map )
@@ -1941,7 +2056,6 @@ private:
     void initAsVector()
     {
         init();
-        assert(DType::Null==m_ucType || DType::Vector==m_ucType);
         if ( DType::Null==m_ucType || DType::Vector==m_ucType )
         {
             if ( NULL == m_value.vec )
@@ -1959,7 +2073,6 @@ private:
     void initAsBuf()
     {
         init();
-        assert(DType::Null==m_ucType || DType::String==m_ucType);
         if ( DType::Null==m_ucType || DType::String==m_ucType )
         {
             if ( NULL == m_value.buf )
@@ -1977,8 +2090,7 @@ private:
 
     void assign(const this_type& rhs)
     {
-
-        if ( m_ucType == DType::String ) delete m_value.buf;
+	    if ( m_ucType == DType::String ) delete m_value.buf;
         if ( m_ucType == DType::Vector ) delete m_value.vec;
         if ( m_ucType == DType::Map ) delete m_value.map;
 
@@ -1986,6 +2098,11 @@ private:
         {
             m_value.integer = rhs.m_value.integer;
         }
+
+		if ( rhs.m_ucType == DType::SInteger )
+		{
+			m_value.integer = rhs.m_value.integer;
+		}
 
         if ( rhs.m_ucType == DType::Bool )
         {
@@ -1999,17 +2116,14 @@ private:
 
         else if ( rhs.m_ucType == DType::Map )
         {
-            assert(rhs.m_value.map != NULL);
             m_value.map = new MapType(*(rhs.m_value.map));
         }
         else if ( DType::Vector ==  rhs.m_ucType )
         {
-            assert(rhs.m_value.vec != NULL);
             m_value.vec = new VecType(*rhs.m_value.vec);
         }
         else if ( DType::String ==  rhs.m_ucType )
         {
-            assert(rhs.m_value.buf != NULL);
             m_value.buf = new BufType((*rhs.m_value.buf));
         }
         m_ucType = rhs.m_ucType;
@@ -2025,7 +2139,6 @@ private:
     ValueHolder m_value;
     bool m_bInit;
     bool m_bHasData;
-
 };
 
 

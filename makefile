@@ -5,7 +5,7 @@ CXX        = g++
 CFLAGS     = -g  -Wall -DNDEBUG
 
 
-OBJECT = CCommMgr.o CConfig.o CEvent.o CLog.o  CThread.o Utils.o CFileLog.o CHttpParser.o  CHttpResponse.o CTask.o CAnyValue.o
+OBJECT = CCommMgr.o CConfig.o CEvent.o CLog.o  CThread.o Utils.o CFileLog.o CHttpParser.o  CHttpResponse.o CTask.o
 OUTPUT  := liblce.a 
 
 all: $(OUTPUT)

@@ -20,7 +20,7 @@ using namespace std;
 namespace lce
 {
 
-const float MAGIC_FD_TIMES =  1.5;
+static const float MAGIC_FD_TIMES =  1.5;
 
 struct SSession
 {
@@ -32,19 +32,11 @@ struct SSession
 	int iFd;
 	void * pData;
 	struct sockaddr_in stClientAddr;
-	time_t dwBeginTime;
-	time_t getDelayTime()
+	uint64_t ddwBeginTime;
+	int64_t getDelayTime()
 	{
-		time_t dwCurTime = lce::getTickCount();
-		if (dwCurTime >= dwBeginTime)
-        {
-			return dwCurTime - dwBeginTime;
-		}
-		else
-        {
-			return (time_t)(-1) - dwBeginTime + dwCurTime;
-		}
-		return 0;
+		uint64_t ddwCurTime = lce::getTickCount();
+		return ddwCurTime - ddwBeginTime;
 	}
 };
 
@@ -52,6 +44,7 @@ struct SSession
 class CCommMgr
 {
 public:
+
     enum APP_TYPE
     {
         SRV_TCP=1,
@@ -131,8 +124,10 @@ private:
 		void * pData;
 	};
 
+	typedef tr1::unordered_map <int,SProcessor> MAP_TIMER_PROC;
+
 public:
-    int init(uint32_t dwMaxClient = 5000)
+    int init(uint32_t dwMaxClient = 10000)
     {
         if(m_oCEvent.init(dwMaxClient * MAGIC_FD_TIMES)< 0)
         {
@@ -148,6 +143,8 @@ public:
     int createSrv(int iType,const string &sIp,uint16_t wPort,uint32_t dwInitRecvBufLen =10240,uint32_t dwMaxRecvBufLen=102400,uint32_t dwInitSendBufLen=102400,uint32_t dwMaxSendBufLen=1024000);
     int createAsyncConn(uint32_t dwInitRecvBufLen =10240,uint32_t dwMaxRecvBufLen=102400,uint32_t dwInitSendBufLen=102400,uint32_t dwMaxSendBufLen=1024000);
     int setProcessor(int iSrvId,CProcessor * pProcessor,int iPkgType = 0);
+	int setPkgFilter(int iSrvId,CPackageFilter *pPkgFilter);
+
 	int rmSrv(int iSrvId);
 
 
@@ -160,8 +157,8 @@ public:
     int connect(int iSrvId,const string &sIp,uint16_t wPort);
 
 
-    int addTimer(uint32_t dwTimerId,uint32_t dwExpire,CProcessor * pProcessor,void *pData = NULL);
-    int delTimer(uint32_t dwTimerId);
+    int addTimer(int iTimerId,uint32_t dwExpire,CProcessor * pProcessor,void *pData = NULL);
+    int delTimer(int iTimerId);
 
     int addSigHandler(int iSignal,CProcessor * pProcessor);
 
@@ -184,8 +181,8 @@ public:
     static void onConnect(int iFd,void *pData);
 
     static void onAccept(int iFd,void *pData);
-    static void onTimer(uint32_t dwTimerId,void *pData);
-	static void onMessage(int dwMsgType,void *pData);
+    static void onTimer(int iTimerId,void *pData);
+	static void onMessage(int iMsgType,void *pData);
 	static void onSignal(int iSignal);
 
     static CCommMgr & getInstance()
@@ -205,8 +202,8 @@ private:
 private:
     vector <SServerInfo *> m_vecServers;
     vector <SClientInfo *> m_vecClients;
-	hash_map<int,SProcessor *> m_mapTimeProcs;
-	hash_map<int,CProcessor*> m_mapSigProcs;
+	MAP_TIMER_PROC m_mapTimeProcs;
+	map<int,CProcessor*> m_mapSigProcs;
     CEvent m_oCEvent;
     char m_szErrMsg[1024];
     static CCommMgr *m_pInstance;

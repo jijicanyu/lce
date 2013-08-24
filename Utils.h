@@ -90,10 +90,9 @@ namespace lce
     }
 
 	template <class T>
-    std::string toStr(const T &t)
+    inline std::string toStr(const T &t)
 	{
 		std::stringstream stream;
-		stream.precision(20);
 		stream<<t;
 		return stream.str();
 	}
@@ -111,7 +110,7 @@ namespace lce
 	std::string formUrlEncode(const std::string& sSrc);
 	std::string formUrlDecode(const std::string& sSrc);
 
-	std::string charToHex(char c)
+	inline std::string charToHex(char c)
 	{
 		std::string sResult;
 		char first, second;

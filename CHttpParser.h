@@ -135,7 +135,7 @@ private:
 	CHttpParser(const CHttpParser& rhs);
 	CHttpParser& operator=(const CHttpParser& rhs);
 
-	string toLower(const char* pData) const
+	inline string toLower(const char* pData) const
 	{
 		string sData;
 		int iLen = strlen(pData);
@@ -150,18 +150,6 @@ private:
 	HTTP_COMMAND m_nCommand;
 	string m_sURI;
 	string m_sVersion;
-/*	string m_sAccept;
-	string m_sReferer;
-	string m_sAcceptLanguage;
-	string m_sContentType;
-	string m_sAcceptEncoding;
-	string m_sUserAgent;
-	string m_sHost;
-	unsigned long m_dwContentLength;
-	string m_sConnection;
-	string m_sCacheControl;
-	string m_sIfModifiedSince;
-*/
 	string m_sCookies;
 	string m_sValues;
 	MAP_COOKIE m_mapCookieList;
@@ -180,35 +168,17 @@ private:
 
 };
 
-
-/*
-bool CHttpParser::SetData(const unsigned char* pszData, const int iDataLen)
-{
-	return this->SetData(reinterpret_cast<const char*>(pszData), iDataLen);
-}
-*/
-
 void CHttpParser::reset()
 {
 	m_sURI.erase();
 	m_sVersion.erase();
-//	m_sAccept.clear();
-/*	m_sReferer.clear();
-	m_sAcceptLanguage.clear();
-	m_sContentType.clear();
-	m_sAcceptEncoding.clear();
-	m_sUserAgent.clear();
-	m_sHost.clear();
-	m_dwContentLength = 0;
-	m_sConnection.clear();
-	m_sCacheControl.clear();
-*/
 	m_mapCookieList.clear();
 	m_mapValueList.clear();
 	m_sCookies.erase();
 	m_sValues.erase();
 	m_mapHeadInfo.clear();
 	m_sFile.clear();
+	m_sFileName.clear();
 
 }
 

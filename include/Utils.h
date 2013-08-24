@@ -58,12 +58,13 @@ namespace lce
 
 	int setNBlock(int iFd);
 	
-	int setNODelay(int iFd);
+	int setNDelay(int iFd);
+
+	int setSocketBufSize(int iFd,int iOpt,uint32_t dwBufSize);
 
 	int close(const int iFd);
 
-
-	int setNCloseWait(const int iFd);
+	int setReUseAddr(const int iFd);
 
 	int send(int iFd, const char *buf, int count);
 
@@ -74,15 +75,12 @@ namespace lce
 
     int connect(int iFd,const std::string &sHost,uint16_t wPort);
 
-	inline time_t getTickCount()
+	inline uint64_t getTickCount()
     {
         timeval tv;
         gettimeofday(&tv, 0);
         return tv.tv_sec * 1000 + tv.tv_usec/1000;
     }
-
-    std::string& trimString(std::string& sSource);
-
 
     inline std::string inetNtoA(const uint32_t dwIp)
     {
@@ -92,18 +90,17 @@ namespace lce
     }
 
 	template <class T>
-    std::string toStr(const T &t)
+    inline std::string toStr(const T &t)
 	{
 		std::stringstream stream;
-		stream.precision(20);
 		stream<<t;
 		return stream.str();
 	}
 
 	void initDaemon();
 
-    bool setFileLimit(const uint32_t dwLimit);
-	bool setCoreLimit(const uint32_t dwLimit);
+    bool setFileLimit(const size_t dwLimit);
+	bool setCoreLimit(const size_t dwLimit);
 
 	std::string getGMTDate(const time_t& cur);
 
@@ -112,7 +109,22 @@ namespace lce
 
 	std::string formUrlEncode(const std::string& sSrc);
 	std::string formUrlDecode(const std::string& sSrc);
-	std::string charToHex(char c);
+
+	inline std::string charToHex(char c)
+	{
+		std::string sResult;
+		char first, second;
+
+		first = (c & 0xF0) / 16;
+		first += first > 9 ? 'A' - 10 : '0';
+		second = c & 0x0F;
+		second += second > 9 ? 'A' - 10 : '0';
+
+		sResult.append(1, first);
+		sResult.append(1, second);
+
+		return sResult;
+	}
 	inline char hexToChar(char first, char second)
 	{
 		int digit;

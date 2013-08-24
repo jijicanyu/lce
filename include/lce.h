@@ -1,6 +1,7 @@
 #ifndef __LCE_H__
 #define __LCE_H__
 #include "Utils.h"
+#include "StringHelper.h"
 #include "CConfig.h"
 #include "CFileLog.h"
 #include "CCommMgr.h"
@@ -19,8 +20,6 @@
 #include "CTask.h"
 #include "CThread.h"
 #include "CLog.h"
-#include "CFIFOBuffer.h"
-#include "CFIFOBufferByHead.h"
 #include "CAnyValue.h"
 
 #endif
