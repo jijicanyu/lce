@@ -74,7 +74,7 @@ public:
 	void setLastModified(const time_t dwTime) {	m_dwLastModified = dwTime;	}
 	void setExpires(const time_t dwTime)	{	m_dwExpiresTime = dwTime;	}
 	void setETag(const std::string& sETag)	{	m_sETag = sETag;	}
-	void setHead(const std::string &sName,const std::string &sValue);
+	inline void setHead(const std::string &sName,const std::string &sValue);
 	inline void end();
 
 	const char* data() const {	return m_sSendData.c_str();	}
@@ -147,12 +147,8 @@ void CHttpResponse::end()
 	char szTmp[1024]={0};
 	m_sSendData.erase();
 
-	//
 	snprintf(szTmp, sizeof(szTmp), "HTTP/1.1 %d %s\r\n", m_iStatusCode,getStatusCodeDesc(m_iStatusCode));
 	m_sSendData = szTmp;
-
-//	sprintf(szTmp, "Keep-Alive: timeout=300000, max=10000000\r\n");
-//	m_sSendData += szTmp;
 
 	snprintf(szTmp, sizeof(szTmp),"Connection: %s\r\n", m_sConnection.c_str());
 	m_sSendData += szTmp;
@@ -172,9 +168,6 @@ void CHttpResponse::end()
 		snprintf(szTmp, sizeof(szTmp), "Expires: %s\r\n", getGMTDate(m_dwExpiresTime).c_str());
 		m_sSendData += szTmp;
 	}
-
-	//Server: Apache/1.3.29 (Unix)\r\n
-	//	m_sSendData += "Server: qqlive web server1.0\r\n";
 
 	if (!m_sCacheControl.empty())
 	{
@@ -202,6 +195,13 @@ void CHttpResponse::end()
 			m_sSendData += szTmp;
 		}
 	}
+
+	for(MAP_HEAD::const_iterator it = m_mapHead.begin();it!=m_mapHead.end();++it)
+	{
+		snprintf(szTmp, sizeof(szTmp), "%s: %s\r\n", it->first.c_str(),it->second.c_str());
+		m_sSendData += szTmp;
+	}
+
 	//set cookie
 	for (MAP_COOKIE::const_iterator it=m_mapCookie.begin(); it!=m_mapCookie.end(); ++it)
 	{
