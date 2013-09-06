@@ -3,7 +3,7 @@ CXX        = g++
 #CFLAGS     = -g -O -Wall #-DDEBUG]
 #CFLAGS = -Wall  -O2 -DDEBUG
 CFLAGS     = -g  -Wall -DNDEBUG
-
+INCLUDEDIR = -I../include
 
 OBJECT = CCommMgr.o CConfig.o CEvent.o CLog.o  CThread.o Utils.o CFileLog.o CHttpParser.o  CHttpResponse.o CTask.o
 OUTPUT  := liblce.a 
@@ -15,7 +15,7 @@ liblce.a:$(OBJECT)
 
 
 .cpp.o:
-	$(CXX) $(CFLAGS) -c $^ 
+	$(CXX) $(CFLAGS) $(INCLUDEDIR) -c $^ 
 	
 .c.o:
 	gcc $(CFLAGS) $(INCLUDEDIR) -c $^ 
@@ -24,8 +24,7 @@ liblce.a:$(OBJECT)
 
 install:
 
-	cp *.h include
-	cp liblce.a lib/
+	cp liblce.a ../lib/
 
 uninstall:
 

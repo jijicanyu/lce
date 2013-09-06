@@ -57,7 +57,7 @@ struct DType
 		SInteger1	= 13,		///< tiny int value (1字节)
 		SInteger2	= 14,		///< small int value (2字节)
 		SInteger4	= 15,		///< signed integer value(int32)(4字节)
-		SInteger8	= 16,		///< signed integer value(int32)(4字节)
+		SInteger8	= 16,		///< signed integer value(int64)(8字节)
 		SInteger    = SInteger8,
     };
 };
@@ -975,12 +975,16 @@ public:
         break;
         case DType::Integer:
         {
-            sBuf += toStr(m_value.integer);
+			char szData[20];
+			snprintf(szData,sizeof(szData),"%llu",m_value.integer);
+            sBuf += szData;
         }
         break;
 		case DType::SInteger:
 		{
-			sBuf += toStr((int64_t)m_value.integer);
+			char szData[20];
+			snprintf(szData,sizeof(szData),"%lld",(int64_t)m_value.integer);
+			sBuf += szData;
 		}
 		break;
         case DType::Float:
@@ -1041,14 +1045,6 @@ private:
         {
             throw Error("decode data error.");
         }
-    }
-
-    template <class T>
-    static std::string inline toStr(const T &t)
-    {
-        std::stringstream stream;
-        stream<<t;
-        return stream.str();
     }
 
     static std::string textEncodeJSON(const char *sSrc,size_t iSize)
@@ -1127,12 +1123,16 @@ public:
         break;
         case DType::Integer:
         {
-            sBuf += toStr(m_value.integer);
+			char szData[20];
+			snprintf(szData,sizeof(szData),"%llu",m_value.integer);
+			sBuf += szData;
         }
         break;
 		case DType::SInteger:
 		{
-			sBuf += toStr((int64_t)m_value.integer);
+			char szData[20];
+			snprintf(szData,sizeof(szData),"%lld",(int64_t)m_value.integer);
+			sBuf += szData;
 		}
 		break;
         case DType::Float:

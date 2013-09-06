@@ -305,6 +305,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CShmHashTable.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CShmList.h"
 				>
 			</File>
