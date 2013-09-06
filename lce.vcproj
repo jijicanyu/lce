@@ -166,174 +166,174 @@
 	</References>
 	<Files>
 		<Filter
-			Name="源文件"
-			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
-			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
+			Name="include"
 			>
 			<File
-				RelativePath=".\CCommMgr.cpp"
+				RelativePath=".\include\CAnyValue.h"
 				>
 			</File>
 			<File
-				RelativePath=".\CConfig.cpp"
+				RelativePath=".\include\CBitMap.h"
 				>
 			</File>
 			<File
-				RelativePath=".\CEvent.cpp"
+				RelativePath=".\include\CCommMgr.h"
 				>
 			</File>
 			<File
-				RelativePath=".\CFileLog.cpp"
+				RelativePath=".\include\CConfig.h"
 				>
 			</File>
 			<File
-				RelativePath=".\CHttpParser.cpp"
+				RelativePath=".\include\CEvent.h"
 				>
 			</File>
 			<File
-				RelativePath=".\CHttpResponse.cpp"
+				RelativePath=".\include\CFIFOBuffer.h"
 				>
 			</File>
 			<File
-				RelativePath=".\CLog.cpp"
+				RelativePath=".\include\CFIFOBufferByHead.h"
 				>
 			</File>
 			<File
-				RelativePath=".\CTask.cpp"
+				RelativePath=".\include\CFileLog.h"
 				>
 			</File>
 			<File
-				RelativePath=".\CThread.cpp"
+				RelativePath=".\include\CH2ShortT3PackageFilter.h"
 				>
 			</File>
 			<File
-				RelativePath=".\Utils.cpp"
+				RelativePath=".\include\CH2T3PackageFilter.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\CHashMap.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\CHttpPackageFilter.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\CHttpParser.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\CHttpResponse.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\CLock.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\CLog.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\CPackage.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\CPackageFilter.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\CProcessor.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\CRawPackageFilter.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\CRegExp.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\CShm.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\CShmArray.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\CShmHashMap.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\CShmList.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\CSocketBuf.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\CTask.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\CThread.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\lce.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\StringHelper.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\Utils.h"
 				>
 			</File>
 		</Filter>
 		<Filter
-			Name="头文件"
-			Filter="h;hpp;hxx;hm;inl;inc;xsd"
-			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
+			Name="src"
 			>
 			<File
-				RelativePath=".\CAnyValue.h"
+				RelativePath=".\src\CCommMgr.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\CBitMap.h"
+				RelativePath=".\src\CConfig.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\CCommMgr.h"
+				RelativePath=".\src\CEvent.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\CConfig.h"
+				RelativePath=".\src\CFileLog.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\CEvent.h"
+				RelativePath=".\src\CHttpParser.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\CFileLog.h"
+				RelativePath=".\src\CHttpResponse.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\CH2ShortT3PackageFilter.h"
+				RelativePath=".\src\CLog.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\CH2T3PackageFilter.h"
+				RelativePath=".\src\CTask.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\CHashMap.h"
+				RelativePath=".\src\CThread.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\CHttpPackageFilter.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CHttpParser.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CHttpResponse.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CLock.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CLog.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CPackage.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CPackageFilter.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CProcessor.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CRawPackageFilter.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CRegExp.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CShm.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CShmArray.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CShmHashMap.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CShmHashTable.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CShmList.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CSocketBuf.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CTask.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CThread.h"
-				>
-			</File>
-			<File
-				RelativePath=".\lce.h"
-				>
-			</File>
-			<File
-				RelativePath=".\StringHelper.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Utils.h"
+				RelativePath=".\src\Utils.cpp"
 				>
 			</File>
 		</Filter>
@@ -346,6 +346,10 @@
 		<Filter
 			Name="test"
 			>
+			<File
+				RelativePath=".\test\Press_CAnyValue.cpp"
+				>
+			</File>
 			<File
 				RelativePath=".\test\Test_BitMap.cpp"
 				>
@@ -379,11 +383,27 @@
 				>
 			</File>
 			<File
+				RelativePath=".\test\test_lf.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\test\Test_shm.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\test\Test_shm2.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\test\Test_StringHelper.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\test\Test_time.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\test\test_unordered_map.cpp"
 				>
 			</File>
 		</Filter>
