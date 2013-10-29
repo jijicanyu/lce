@@ -33,15 +33,16 @@ namespace lce
         for(int i=0;i<m_iThreadNum;i++)
         {
             m_vecTaskThreads[i]->stop();
+			pthread_cancel(m_vecTaskThreads[i]->getId());
         }
         return 0;
     }
 
     int CTask::dispatch(int iTaskType,void *pData)
     {
-        STaskInfo *pstTaskInfo=new STaskInfo;
-        pstTaskInfo->iTaskType=iTaskType;
-        pstTaskInfo->pData=pData;
+        STaskInfo *pstTaskInfo = new STaskInfo;
+        pstTaskInfo->iTaskType = iTaskType;
+        pstTaskInfo->pData = pData;
 
         pthread_mutex_lock(&m_lock);
 
@@ -52,11 +53,9 @@ namespace lce
 			pthread_mutex_unlock(&m_lock);
             return -1;
         }
-
-
         m_queTaskQueue.push(pstTaskInfo);
+		pthread_cond_signal(&m_cond); //唤醒睡眠线程
         pthread_mutex_unlock(&m_lock);
-        pthread_cond_signal(&m_cond); //唤醒睡眠线程
 
         return 0;
     }
@@ -74,7 +73,7 @@ namespace lce
 
         while(!m_queTaskQueue.empty())
         {
-            STaskInfo *pstTaskInfo=m_queTaskQueue.front();
+            STaskInfo *pstTaskInfo = m_queTaskQueue.front();
             delete pstTaskInfo;
             m_queTaskQueue.pop();
         }

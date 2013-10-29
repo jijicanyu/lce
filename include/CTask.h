@@ -54,15 +54,17 @@ public:
 
                 pthread_mutex_lock(&m_pTask->m_lock);
 
-                if (!m_pTask->m_queTaskQueue.empty())
-                {
-                    pstTaskInfo=m_pTask->m_queTaskQueue.front();
-                    m_pTask->m_queTaskQueue.pop();
-                }
-                else
+                if(m_pTask->m_queTaskQueue.empty())
                 {
                     pthread_cond_wait(&m_pTask->m_cond, &m_pTask->m_lock);//线程睡眠等待
                 }
+
+				if (!m_pTask->m_queTaskQueue.empty())
+				{
+					pstTaskInfo = m_pTask->m_queTaskQueue.front();
+					m_pTask->m_queTaskQueue.pop();
+				}
+
                 pthread_mutex_unlock(&m_pTask->m_lock);
 
                 if (pstTaskInfo != NULL)

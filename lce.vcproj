@@ -189,14 +189,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\include\CFIFOBuffer.h"
-				>
-			</File>
-			<File
-				RelativePath=".\include\CFIFOBufferByHead.h"
-				>
-			</File>
-			<File
 				RelativePath=".\include\CFileLog.h"
 				>
 			</File>
@@ -206,10 +198,6 @@
 			</File>
 			<File
 				RelativePath=".\include\CH2T3PackageFilter.h"
-				>
-			</File>
-			<File
-				RelativePath=".\include\CHashMap.h"
 				>
 			</File>
 			<File
@@ -225,11 +213,23 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CLFQueue.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\CLock.h"
 				>
 			</File>
 			<File
 				RelativePath=".\include\CLog.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CNetWorker.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CNetWorkerMgr.h"
 				>
 			</File>
 			<File
@@ -258,14 +258,6 @@
 			</File>
 			<File
 				RelativePath=".\include\CShmArray.h"
-				>
-			</File>
-			<File
-				RelativePath=".\include\CShmHashMap.h"
-				>
-			</File>
-			<File
-				RelativePath=".\include\CShmList.h"
 				>
 			</File>
 			<File
@@ -322,6 +314,14 @@
 			</File>
 			<File
 				RelativePath=".\src\CLog.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CNetWorker.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CNetWorkerMgr.cpp"
 				>
 			</File>
 			<File

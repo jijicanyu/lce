@@ -1,15 +1,15 @@
 #include <iostream>
-#include "../Utils.h"
-#include "../CEvent.h"
-#include "../CCommMgr.h"
-#include "../CH2ShortT3PackageFilter.h"
-#include "../CRawPackageFilter.h"
-#include "../CPackage.h"
-#include "../CHttpPackageFilter.h"
-#include "../CHttpParser.h"
-#include "../CHttpResponse.h"
-#include "../CTask.h"
-#include "../CProcessor.h"
+#include "Utils.h"
+#include "CEvent.h"
+#include "CCommMgr.h"
+#include "CH2ShortT3PackageFilter.h"
+#include "CRawPackageFilter.h"
+#include "CPackage.h"
+#include "CHttpPackageFilter.h"
+#include "CHttpParser.h"
+#include "CHttpResponse.h"
+#include "CTask.h"
+#include "CProcessor.h"
 
 using namespace std;
 using namespace lce;
@@ -44,7 +44,7 @@ public:
 		dwCount++;
         SRequest *pstRequest=new SRequest;
 
-        pstRequest->stSession=stSession;
+        pstRequest->stSession = stSession;
         /*
 		pstRequest->oParser.setData(pszData,iSize);
 
@@ -76,8 +76,10 @@ public:
 		
 		
 
-		/*
+		
 		//cout<<"onRead" <<endl;
+	
+		/*
         if(CProCenter::getInstance().dispatch(100,pstRequest)< 0)
 		{
 			cout<<CProCenter::getInstance().getErrMsg()<<endl;
@@ -89,8 +91,9 @@ public:
     void onWork(int iTaskType,void *pData,int iIndex)
     { 
 
+		//usleep(2000);
 		//cout<<"type="<<iTaskType<<endl;
-        //cout<<"index"<< iIndex<<endl;
+        //cout<<"index="<< iIndex<<endl;
 		SRequest *pstRequest=(SRequest*)pData;
 
         pstRequest->oResponse.begin();
@@ -211,7 +214,7 @@ int main()
 	oPkg>>b;
 
 
-    CProCenter::getInstance().init(2,50000);
+    CProCenter::getInstance().init(3,50000);
     CProCenter::getInstance().run();
 
     if(CCommMgr::getInstance().init(50000) < 0)
