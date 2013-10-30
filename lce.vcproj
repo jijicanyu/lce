@@ -173,6 +173,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\CAsyncLog.h"
+				>
+			</File>
+			<File
 				RelativePath=".\include\CBitMap.h"
 				>
 			</File>
@@ -289,6 +293,10 @@
 			Name="src"
 			>
 			<File
+				RelativePath=".\src\CAsyncLog.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\src\CCommMgr.cpp"
 				>
 			</File>
@@ -344,6 +352,10 @@
 			>
 			<File
 				RelativePath=".\test\Press_CAnyValue.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\test\Test_AsyncLog.cpp"
 				>
 			</File>
 			<File

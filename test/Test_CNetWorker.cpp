@@ -2,7 +2,7 @@
 #include <CNetWorkerMgr.h>
 
 using namespace lce;
-
+ 
 
 class CWorker:public CNetWorker
 {
@@ -13,7 +13,7 @@ public:
 		string sData;
 		sData+="HTTP/1.1 200 OK\r\n";
 		sData+="Connection: Close\r\n";
-		sData+="Content-Length: 5\r\n\r\n";
+		sData+="Content-Length: 5\r\n\r\n";  
 		sData+="hello";
 
 		write(stSession,(char*)sData.data(),sData.size());

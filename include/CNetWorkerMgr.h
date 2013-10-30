@@ -28,6 +28,7 @@ template<class T>
 class CNetWorkerMgr
 {
 
+
 public:
 	int init(uint32_t dwThreadNum = 1,uint32_t dwMaxClient = 10000);
 
@@ -234,8 +235,6 @@ template<class T>
 void CNetWorkerMgr<T>::onAccept(int iFd,void *pData)
 {
 	SServerInfo *pstServerInfo=(SServerInfo *)pData;
-
-	if (pstServerInfo == NULL) return;
 
 	while(true) //循环接受请求，减小epoll软中断次数，提高性能
 	{

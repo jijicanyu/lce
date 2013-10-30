@@ -1,7 +1,7 @@
 #ifndef __NCE_CLOG_H
 #define __NCE_CLOG_H
 
-#include "CFileLog.h"
+#include "CAsyncLog.h"
 #include <string>
 using namespace std;
 
@@ -27,11 +27,11 @@ enum{
 };
 
 public:
-    static int init(const string &sLogFile,unsigned long dwLogSize,uint32_t dwLogCount,bool bShowCmd=true,uint32_t cLevel=15,bool bShowLine=true)
+    static int init(const string &sLogFile,int iLogSecs,unsigned long dwLogSize,uint32_t dwLogCount,bool bShowCmd=true,uint32_t cLevel=15,bool bShowLine=true)
     {
         CLog::m_cLevel=cLevel;
         CLog::m_bShowLine=bShowLine;
-        return CLog::m_oLog.init(sLogFile,dwLogSize,dwLogCount,bShowCmd);
+        return CLog::m_oLog.init(sLogFile,iLogSecs,dwLogSize,dwLogCount,bShowCmd);
     }
 
     static inline void log(const uint8_t cLogLevel,const char* pszFile,const long lLine,const char *sFormat, ...)
@@ -81,7 +81,7 @@ public:
     }
 
 private:
-    static lce::CFileLog m_oLog;
+    static lce::CAsyncLog m_oLog;
     static uint8_t m_cLevel;
     static bool m_bShowLine;
 
