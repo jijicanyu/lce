@@ -138,6 +138,10 @@ namespace lce
 		int close(const SSession &stSession);
 		int write(const SSession &stSession,const char* pszData, const int iSize,bool bClose = true);
 
+		int createAsyncConn(int iPkgType = PKG_RAW,uint32_t dwInitRecvBufLen =10240,uint32_t dwMaxRecvBufLen=102400,uint32_t dwInitSendBufLen=102400,uint32_t dwMaxSendBufLen=1024000);
+
+		int connect(int iSrvId,const string &sIp,uint16_t wPort);
+
 	private:
 		int run();
 
@@ -154,6 +158,8 @@ namespace lce
 	private:
 		CEvent m_oEvent;
 		vector <SClientInfo *> m_vecClients;
+		vector <SServerInfo *> m_vecServers;
+
 		char m_szErrMsg[1024];
 		
 

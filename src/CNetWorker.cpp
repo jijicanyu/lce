@@ -16,6 +16,187 @@ int CNetWorker::init(uint32_t dwMaxClient /* = 10000 */)
 	return 0;
 }
 
+int CNetWorker::createAsyncConn(int iPkgType /* = PKG_RAW */,uint32_t dwInitRecvBufLen /* =10240 */,uint32_t dwMaxRecvBufLen/* =102400 */,uint32_t dwInitSendBufLen/* =102400 */,uint32_t dwMaxSendBufLen/* =1024000 */)
+{
+	SServerInfo *pstServerInfo = new SServerInfo;
+
+	pstServerInfo->sIp ="";
+	pstServerInfo->wPort = 0;
+
+	pstServerInfo->iType = CONN_TCP;
+
+
+	pstServerInfo->dwInitRecvBufLen=dwInitRecvBufLen;
+	pstServerInfo->dwMaxRecvBufLen=dwMaxRecvBufLen;
+
+	pstServerInfo->dwInitSendBufLen=dwInitSendBufLen;
+	pstServerInfo->dwMaxSendBufLen=dwMaxSendBufLen;
+
+	switch(iPkgType)
+	{
+	case PKG_RAW:
+		pstServerInfo->iPkgType = iPkgType;
+		pstServerInfo->pPackageFilter = new CRawPackageFilter;
+		break;
+	case PKG_HTTP:
+		pstServerInfo->iPkgType = iPkgType;
+		pstServerInfo->pPackageFilter = new CHttpPackageFilter;
+		break;
+	case PKG_H2ST3:
+		pstServerInfo->iPkgType = iPkgType;
+		pstServerInfo->pPackageFilter = new CH2ShortT3PackageFilter;
+		break;
+	case PKG_H2LT3:
+		pstServerInfo->iPkgType = iPkgType;
+		pstServerInfo->pPackageFilter = new CH2T3PackageFilter;
+		break;
+	case PKG_EXT:
+		pstServerInfo->iPkgType = iPkgType;
+		pstServerInfo->pPackageFilter = NULL;
+		break;
+	default:
+		pstServerInfo->iPkgType = PKG_RAW;
+		pstServerInfo->pPackageFilter = new CRawPackageFilter;
+
+	}
+
+
+	pstServerInfo->iSrvId=m_vecServers.size();
+	pstServerInfo->iFd=0;
+
+	m_vecServers.push_back(pstServerInfo);
+	return pstServerInfo->iSrvId;
+}
+
+int CNetWorker::connect(int iSrvId,const string &sIp,uint16_t wPort)
+{
+	if( iSrvId <0 || iSrvId >(int) m_vecServers.size()-1)
+	{
+		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,iSrvId error",__FILE__,__LINE__);
+		return -1;
+	}
+
+	SServerInfo * pstServerInfo=m_vecServers[iSrvId];
+
+	if (pstServerInfo == NULL)
+	{
+		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,iSrvId error",__FILE__,__LINE__);
+		return -1;
+	}
+
+	if(pstServerInfo->iType == CONN_TCP)
+	{
+
+		SClientInfo * pstClientInfo = new SClientInfo;
+		pstClientInfo->iFd=lce::createTcpSock();
+		pstClientInfo->pstServerInfo = pstServerInfo;
+		pstClientInfo->poWorker = this;
+
+		if (pstClientInfo->iFd < 0)
+		{
+			snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
+			delete pstClientInfo;
+			pstClientInfo = NULL;
+			return -1;
+
+		}
+
+		lce::setReUseAddr(pstClientInfo->iFd);
+		lce::setNBlock(pstClientInfo->iFd);
+
+		pstClientInfo->stClientAddr.sin_family = AF_INET;
+		pstClientInfo->stClientAddr.sin_port = htons(wPort);
+		pstClientInfo->stClientAddr.sin_addr.s_addr = inet_addr(sIp.c_str());
+		memset(&(pstClientInfo->stClientAddr.sin_zero),0,8);
+
+		int iRet = lce::connect(pstClientInfo->iFd,sIp,wPort);
+
+		if(iRet != -1)
+		{
+			SSession stSession;
+			stSession.ddwBeginTime=lce::getTickCount();
+			stSession.iFd=pstClientInfo->iFd;
+			stSession.iSvrId=pstServerInfo->iSrvId;
+			stSession.stClientAddr=pstClientInfo->stClientAddr;
+			m_vecClients[pstClientInfo->iFd] = pstClientInfo;
+			onConnect(stSession,true);
+
+			if(isClose(pstClientInfo->iFd))
+			{
+				snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,connect error maybe client have closed",__FILE__,__LINE__);
+				return -1;
+			}
+			return pstClientInfo->iFd;
+
+
+		}
+		else
+		{
+
+			if (errno == EINPROGRESS)
+			{
+
+				m_oEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_WRITE,CNetWorker::onConnect,pstClientInfo);
+				m_vecClients[pstClientInfo->iFd]=pstClientInfo;
+				return pstClientInfo->iFd;
+			}
+			else
+			{
+
+				snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
+				delete pstClientInfo;
+				pstClientInfo = NULL;
+				return -1;
+			}
+		}
+		return -1;
+
+
+	}
+	else
+	{
+		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,server iType error",__FILE__,__LINE__);
+		return -1;
+	}
+
+	return -1;
+}
+
+void CNetWorker::onConnect(int iFd,void *pData)
+{
+
+	SClientInfo *pstClientInfo = (SClientInfo*)pData;
+	CNetWorker *poWorker = pstClientInfo->poWorker;
+
+	poWorker->m_oEvent.delFdEvent(iFd,CEvent::EV_WRITE);
+
+	SServerInfo * pstServerInfo = pstClientInfo->pstServerInfo;
+
+	int error;
+	socklen_t ilen = sizeof(int);
+	getsockopt(iFd, SOL_SOCKET, SO_ERROR, &error, &ilen);
+
+
+	SSession stSession;
+	stSession.ddwBeginTime=lce::getTickCount();
+	stSession.iFd=iFd;
+	stSession.iSvrId=pstServerInfo->iSrvId;
+	stSession.stClientAddr=pstClientInfo->stClientAddr;
+
+	if(error == 0)
+	{
+		poWorker->onConnect(stSession,true);
+		poWorker->m_oEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_READ,CNetWorker::onTcpRead,pstClientInfo);
+	}
+	else
+	{
+		poWorker->onConnect(stSession,false);
+		poWorker->close(iFd);
+	}
+
+
+}
+
 int CNetWorker::run()
 {
 	return m_oEvent.run();

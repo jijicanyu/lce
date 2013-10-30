@@ -217,10 +217,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\include\CLFQueue.h"
-				>
-			</File>
-			<File
 				RelativePath=".\include\CLock.h"
 				>
 			</File>

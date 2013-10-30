@@ -52,7 +52,6 @@ public:
 
 public:
 	int createSrv(const string &sIp,uint16_t wPort,int iPkgType = PKG_RAW,uint32_t dwInitRecvBufLen =10240,uint32_t dwMaxRecvBufLen=102400,uint32_t dwInitSendBufLen=102400,uint32_t dwMaxSendBufLen=1024000);
-	int createAsyncConn(int iPkgType = PKG_RAW,uint32_t dwInitRecvBufLen =10240,uint32_t dwMaxRecvBufLen=102400,uint32_t dwInitSendBufLen=102400,uint32_t dwMaxSendBufLen=1024000);
 	int setPkgFilter(int iSrvId,CPackageFilter *pPkgFilter);
 	int setErrHandler(NWMGR_ERROR_HANDLER pErrHandler = NULL);
 	const char * getErrMsg(){ return m_szErrMsg;}
