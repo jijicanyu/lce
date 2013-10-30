@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
-#include <sys/eventfd.h>
+#include <stdexcept>
 #include "Utils.h"
 #include "CSocketBuf.h"
 #include "CPackageFilter.h"
@@ -14,14 +14,40 @@
 #include "CRawPackageFilter.h"
 #include "CEvent.h"
 #include "signal.h"
-#include "CProcessor.h"
 #include "CThread.h"
-#include "CLFQueue.h"
 
 using namespace std;
 
 namespace lce
 {
+	static const float FD_TIMES =  1.2;
+
+	enum APP_TYPE
+	{
+		SRV_TCP=1,
+		SRV_UDP=2,
+		CONN_TCP=3,
+	};
+
+	enum PKG_TYPE
+	{
+		PKG_EXT = 0,
+		PKG_H2ST3 = 1,
+		PKG_H2LT3 = 2,
+		PKG_HTTP = 3,
+		PKG_RAW = 4,
+	};
+
+	enum ERR_TYPE
+	{
+		ERR_SOCKET = 1,
+		ERR_INVALID_PACKAGE = 2,
+		ERR_MAX_CLIENT = 3,
+		ERR_NO_BUFFER = 4,
+		ERR_NOT_READY = 5,
+		ERR_SYSTEM = 6,
+		ERR_PKG_FILTER = 7,
+	};
 
 	struct SSession
 	{
@@ -41,14 +67,44 @@ namespace lce
 		}
 	};
 
+	struct SServerInfo
+	{
+		SServerInfo()
+		{
+			pPackageFilter=NULL;
+			iPkgType = 0;
+			iFd = 0;
+			iSrvId = 0;
+			iType = 0;
+		}
+		int iSrvId;
+		int iFd;
+		string sIp;
+		uint16_t wPort;
+		int iPkgType;
+		uint32_t dwInitRecvBufLen;
+		uint32_t dwMaxRecvBufLen;
+		uint32_t dwInitSendBufLen;
+		uint32_t dwMaxSendBufLen;
+		CPackageFilter *pPackageFilter;
+		int iType;
+
+		~SServerInfo()
+		{
+			if(pPackageFilter != NULL && iPkgType != PKG_EXT) { delete pPackageFilter;pPackageFilter = NULL ;}
+		}
+	};
+
+	class CNetWorker;
 
 	struct SClientInfo
 	{
 		SClientInfo(){ memset(this,0,sizeof(SClientInfo));}
-		int iSrvId;
 		int iFd;
 		bool bNeedClose;
-		CSocketBuf *pSocketRecvBuf;
+		CNetWorker *poWorker;
+		SServerInfo *pstServerInfo;
+ 		CSocketBuf *pSocketRecvBuf;
 		CSocketBuf *pSocketSendBuf;
 		sockaddr_in stClientAddr;
 		~SClientInfo()
@@ -60,9 +116,10 @@ namespace lce
 
 	class CNetWorker :public CThread
 	{
+
 	public:
 
-		int init();
+		int init(uint32_t dwMaxClient = 10000);
 
 		virtual void onRead(SSession &stSession,const char * pszData, const int iSize){
 			throw std::runtime_error("not implement onRead");
@@ -73,22 +130,32 @@ namespace lce
 		virtual void onConnect(SSession &stSession,bool bOk){
 			throw std::runtime_error("not implement onConnect");
 		}
+		virtual void onError(SSession &stSession,const char * szErrMsg,int iError){
+			throw std::runtime_error("not implement  onError");
+		}
 
 		int watch(int iFd,void *pData);
+		int close(const SSession &stSession);
+		int write(const SSession &stSession,const char* pszData, const int iSize,bool bClose = true);
 
-		int write(const SSession &stSession,char*pszData,int iSize,bool bClose = true);
 	private:
 		int run();
+
+		inline bool isClose(int iFd)
+		{
+			return (m_vecClients[iFd] == NULL);
+		}
+		int close(int iFd);
+		int write(int iFd);
+
 		static void onWrite(int iFd,void *pData);
 		static void onTcpRead(int iFd,void *pData);
 		static void onConnect(int iFd,void *pData);
-		static void onQueueEvent(int iFd,void *pData);
 	private:
 		CEvent m_oEvent;
 		vector <SClientInfo *> m_vecClients;
-		int m_iEventFd;
-		CLFQueue<SClientInfo *> m_queClients;
 		char m_szErrMsg[1024];
+		
 
 	};
 };

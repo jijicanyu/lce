@@ -54,7 +54,7 @@ bool CConfig::loadConfig(const std::string& sCfgFileName)
 				if(std::string::npos != j)
 				{
 					sApp = sLine.substr(i+1, j-i-1);
-					lce::strTrim(sApp);
+					lce::trimStr(sApp);
 					if (sApp.empty())
 					{
 						break;
@@ -71,13 +71,13 @@ bool CConfig::loadConfig(const std::string& sCfgFileName)
 			{
 				sName = sLine.substr(i, j-i);
 
-				lce::strTrim(sName);
-				lce::strTrim(sApp);
+				lce::trimStr(sName);
+				lce::trimStr(sApp);
 
 				if(!sName.empty())
 				{
 					sValue = sLine.substr(j+1);
-					strTrim(sValue);
+					trimStr(sValue);
 					m_mapConfig[sApp][sName] = sValue;
 				}
 			}

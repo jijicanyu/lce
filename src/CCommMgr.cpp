@@ -153,7 +153,7 @@ int CCommMgr::setProcessor(int iSrvId,CProcessor *pProcessor,int iPkgType)
 		return -1;
 	}
 
-    SServerInfo * pstServerInfo=m_vecServers[iSrvId];
+    SServerInfo * pstServerInfo = m_vecServers[iSrvId];
 
 	if (pstServerInfo == NULL)
 	{
@@ -180,6 +180,10 @@ int CCommMgr::setProcessor(int iSrvId,CProcessor *pProcessor,int iPkgType)
 	case PKG_H2LT3:
 		pstServerInfo->iPkgType = iPkgType;
 		pstServerInfo->pPackageFilter = new CH2T3PackageFilter;
+		break;
+	case PKG_EXT:
+		pstServerInfo->iPkgType = iPkgType;
+		pstServerInfo->pPackageFilter = NULL;
 		break;
 	default:
 		pstServerInfo->iPkgType = PKG_RAW;
@@ -212,7 +216,7 @@ int CCommMgr::setPkgFilter(int iSrvId,CPackageFilter *pPkgFilter)
 		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,iSrvId error",__FILE__,__LINE__);
 		return -1;
 	}
-
+	pstServerInfo->iPkgType = PKG_EXT;
 	pstServerInfo->pPackageFilter = pPkgFilter;
 	return 0;
 }
@@ -360,12 +364,12 @@ void CCommMgr::onTcpRead(int iFd,void *pData)
         snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"onTcpRead %s,%d,socket buf no memory",__FILE__,__LINE__);
 
 		if (pstServerInfo->pProcessor != NULL)
-			return pstServerInfo->pProcessor->onError(stSession,CCommMgr::getInstance().m_szErrMsg,ERR_NO_BUFFER);
+			pstServerInfo->pProcessor->onError(stSession,CCommMgr::getInstance().m_szErrMsg,ERR_NO_BUFFER);
 
+		return;
     }
 
     iSize=::recv(iFd,pstClientInfo->pSocketRecvBuf->getFreeBuf(),pstClientInfo->pSocketRecvBuf->getFreeSize(),0);
-
 
 
     if(iSize > 0 )
@@ -376,6 +380,15 @@ void CCommMgr::onTcpRead(int iFd,void *pData)
 
         int iRealPkgLen = 0;
         int iPkgLen = 0;
+
+		if(pstServerInfo->pPackageFilter == NULL)
+		{
+			CCommMgr::getInstance().close(iFd);
+			snprintf(CCommMgr::getInstance().m_szErrMsg,sizeof(CCommMgr::getInstance().m_szErrMsg),"onTcpRead %s,%d,package filter is null",__FILE__,__LINE__);
+			if (pstServerInfo->pProcessor != NULL)
+				pstServerInfo->pProcessor->onError(stSession,CCommMgr::getInstance().m_szErrMsg,ERR_PKG_FILTER);
+			return;
+		}
 
         while ( (iWholePkgFlag = pstServerInfo->pPackageFilter->isWholePkg(pstClientInfo->pSocketRecvBuf->getData(), pstClientInfo->pSocketRecvBuf->getSize(), iRealPkgLen, iPkgLen)) == 0 )
         {

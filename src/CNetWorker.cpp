@@ -3,95 +3,355 @@
 namespace lce
 {
 
-	int CNetWorker::init()
+int CNetWorker::init(uint32_t dwMaxClient /* = 10000 */)
+{
+	m_vecClients.resize(dwMaxClient*FD_TIMES,0);
+
+	if(m_oEvent.init(dwMaxClient*FD_TIMES) < 0)
 	{
-		m_vecClients.resize(12000,0);
-		m_oEvent.init();
-		m_queClients.init();
-		m_iEventFd = eventfd(0, EFD_NONBLOCK) ;
-		m_oEvent.addFdEvent(m_iEventFd,CEvent::EV_READ,CNetWorker::onQueueEvent,this);
+		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
+		return -1;
 	}
 
-	int CNetWorker::run()
+	return 0;
+}
+
+int CNetWorker::run()
+{
+	return m_oEvent.run();
+}
+
+int CNetWorker::watch(int iFd,void *pData)
+{
+	return m_oEvent.addFdEvent(iFd,CEvent::EV_READ,CNetWorker::onTcpRead,pData);
+}
+
+
+void CNetWorker::onTcpRead(int iFd,void *pData)
+{
+
+	SClientInfo *pstClientInfo = (SClientInfo*)pData;
+	CNetWorker *poWorker = pstClientInfo->poWorker;
+
+	poWorker->m_vecClients[iFd] = pstClientInfo;
+
+	SSession stSession;
+	stSession.ddwBeginTime = lce::getTickCount();
+	stSession.iFd = iFd;
+	stSession.iSvrId = pstClientInfo->pstServerInfo->iSrvId;
+	stSession.stClientAddr = pstClientInfo->stClientAddr;
+
+	if (pstClientInfo->pSocketRecvBuf == NULL)
 	{
-		m_oEvent.run();
+		pstClientInfo->pSocketRecvBuf = new CSocketBuf(pstClientInfo->pstServerInfo->dwInitRecvBufLen,pstClientInfo->pstServerInfo->dwMaxRecvBufLen);
 	}
 
-	int CNetWorker::watch(int iFd,void *pData)
+	int iSize = 0;
+
+	if(pstClientInfo->pSocketRecvBuf->getFreeSize() == 0)
 	{
-		uint64_t ddwCount = 1;
-		m_queClients.push((SClientInfo*)pData);
-		::write(m_iEventFd,&ddwCount,sizeof(ddwCount));
-		
-		return 0;
+		pstClientInfo->pSocketRecvBuf->addFreeBuf();
 	}
 
-	void CNetWorker::onQueueEvent(int iFd,void *pData)
+	if(pstClientInfo->pSocketRecvBuf->getFreeSize() == 0)
 	{
-		CNetWorker *poWorker = (CNetWorker*)pData;
-		uint64_t ddwCount = 0;
-		::read(iFd,&ddwCount,sizeof(uint64_t));
+		//print error no buf size
+		poWorker->close(iFd);
+		snprintf(poWorker->m_szErrMsg,sizeof(poWorker->m_szErrMsg),"onTcpRead %s,%d,socket buf no memory",__FILE__,__LINE__);
+		poWorker->onError(stSession,poWorker->m_szErrMsg,ERR_NO_BUFFER);
+		return;
 
-		SClientInfo *pstClientInfo = NULL;
+	}
 
-		while(poWorker->m_queClients.pop(&pstClientInfo))
+	iSize = ::recv(iFd,pstClientInfo->pSocketRecvBuf->getFreeBuf(),pstClientInfo->pSocketRecvBuf->getFreeSize(),0);
+
+	if(iSize > 0 ) 
+	{
+		pstClientInfo->pSocketRecvBuf->addData(iSize);
+
+		int iWholePkgFlag = 0;
+
+		int iRealPkgLen = 0;
+		int iPkgLen = 0;
+
+		if(pstClientInfo->pstServerInfo->pPackageFilter == NULL)
 		{
-			poWorker->m_vecClients[pstClientInfo->iFd] = pstClientInfo;
-			SSession stSession;
-			stSession.iFd = pstClientInfo->iFd;
-			stSession.stClientAddr = pstClientInfo->stClientAddr;
-			poWorker->onConnect(stSession,true);
+			poWorker->close(iFd);
+			snprintf(poWorker->m_szErrMsg,sizeof(poWorker->m_szErrMsg),"onTcpRead %s,%d,package filter is null",__FILE__,__LINE__);
+			poWorker->onError(stSession,poWorker->m_szErrMsg,ERR_PKG_FILTER);
+			return;
+		}
 
-			poWorker->m_oEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_READ,CNetWorker::onTcpRead,poWorker);
+		while ((iWholePkgFlag = pstClientInfo->pstServerInfo->pPackageFilter->isWholePkg(pstClientInfo->pSocketRecvBuf->getData(), pstClientInfo->pSocketRecvBuf->getSize(), iRealPkgLen, iPkgLen)) == 0 )
+		{
+			poWorker->onRead(stSession,pstClientInfo->pSocketRecvBuf->getData(),iPkgLen);
+			if(poWorker->isClose(iFd))
+				break;
+			pstClientInfo->pSocketRecvBuf->removeData(iPkgLen);
+		}
+
+
+		if ( -2 == iWholePkgFlag )//非法数据包
+		{
+			//CCommMgr::getInstance().close(iFd);//非法数据包时，不关闭连接，而是重置接收缓冲区，是否关闭连接让上层处理
+			pstClientInfo->pSocketRecvBuf->reset();
+			snprintf(poWorker->m_szErrMsg,sizeof(poWorker->m_szErrMsg),"onTcpRead %s,%d,package invalid",__FILE__,__LINE__);
+			poWorker->onError(stSession,poWorker->m_szErrMsg,ERR_INVALID_PACKAGE);
 		}
 	}
-
-
-	void CNetWorker::onTcpRead(int iFd,void *pData)
+	else if(iSize == 0)
 	{
-		CNetWorker *poWorker = (CNetWorker*)pData;
-		SClientInfo *pstClientInfo = poWorker->m_vecClients[iFd];
-
-		SSession stSession;
-		stSession.iFd = iFd;
-		stSession.stClientAddr = pstClientInfo->stClientAddr;
-
-		char szBuf[10240] = {0};
-		int iSize = ::recv(iFd,szBuf,sizeof(szBuf),0);
-		if(iSize == 0)
+		poWorker->onClose(stSession);
+		poWorker->close(iFd);
+	}
+	else
+	{
+		if( errno == 104) //Connection reset by peer
 		{
-			delete pstClientInfo;
-			lce::close(iFd);
-			poWorker->m_vecClients[iFd] = NULL;
 			poWorker->onClose(stSession);
-			poWorker->m_oEvent.delFdEvent(iFd,CEvent::EV_READ);
-
+			poWorker->close(iFd);
 		}
-		else if(iSize < 0)
+		else if(errno == EAGAIN || errno == EINTR) //处理连接正常，IO不正常情况，不关闭连接
 		{
-			delete pstClientInfo;
-			lce::close(iFd);
-			poWorker->m_vecClients[iFd] = NULL;
-			poWorker->m_oEvent.delFdEvent(iFd,CEvent::EV_READ);
-
-			cout<<"recv error"<<endl;
+			snprintf(poWorker->m_szErrMsg,sizeof(poWorker->m_szErrMsg),"onTcpRead EAGAIN or EINTR %s,%d,errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
+			poWorker->onError(stSession,poWorker->m_szErrMsg,ERR_NOT_READY);
 		}
 		else
 		{
-			poWorker->onRead(stSession,szBuf,iSize);
+			snprintf(poWorker->m_szErrMsg,sizeof(poWorker->m_szErrMsg),"onTcpRead %s,%d,errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
+			poWorker->close(iFd);
+			poWorker->onError(stSession,poWorker->m_szErrMsg,ERR_SOCKET);
 		}
 
 	}
+}
 
-	int CNetWorker::write(const SSession &stSession,char*pszData,int iSize,bool bClose /* = true */)
+int CNetWorker::close(const SSession & stSession)
+{
+	return close(stSession.iFd);
+}
+
+int CNetWorker::close(int iFd)
+{
+	if( m_vecClients[iFd] != NULL)
 	{
-		lce::send(stSession.iFd,pszData,iSize);
-		lce::close(stSession.iFd);
-		delete 	m_vecClients[stSession.iFd];
-		m_vecClients[stSession.iFd] = NULL;
-		m_oEvent.delFdEvent(stSession.iFd,CEvent::EV_READ);
+		delete m_vecClients[iFd];
+		m_vecClients[iFd] = NULL;
+		m_oEvent.delFdEvent(iFd,CEvent::EV_READ|CEvent::EV_WRITE);
+		return lce::close(iFd);
+	}
+	return 0;
+}
 
+int CNetWorker::write(const SSession &stSession,const char* pszData, const int iSize,bool bClose)
+{
+
+	if(isClose(stSession.iFd))
+	{
+		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,write error maybe client have closed",__FILE__,__LINE__);
+		return -1;
+	}
+
+	SClientInfo * pstClientInfo = m_vecClients[stSession.iFd];
+
+	SServerInfo * pstServerInfo = pstClientInfo->pstServerInfo;
+
+
+	pstClientInfo->bNeedClose = bClose;
+	int iSendBufSize = 0 ;
+	int iSendSize = 0;
+
+	if(pstClientInfo->pSocketSendBuf == NULL || pstClientInfo->pSocketSendBuf->getSize() == 0)
+	{
+		iSendSize=lce::send(stSession.iFd,pszData,iSize);
+
+		if(iSendSize > 0 )
+		{
+			if (iSendSize < iSize)
+			{
+				if(pstClientInfo->pSocketSendBuf == NULL)
+				{
+					pstClientInfo->pSocketSendBuf=new CSocketBuf(pstServerInfo->dwInitSendBufLen,pstServerInfo->dwMaxSendBufLen);
+				}
+				if(!pstClientInfo->pSocketSendBuf->addData(pszData+iSendSize,iSize-iSendSize))
+				{
+					snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,write error buffer less than data",__FILE__,__LINE__);
+					return -1;
+				}
+				m_oEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CNetWorker::onWrite,this);
+			}
+			else
+			{
+				if(bClose)
+				{
+					close(stSession.iFd);
+				}
+				else
+				{
+					m_oEvent.delFdEvent(stSession.iFd,CEvent::EV_WRITE);
+				}
+			}
+		}
+		else
+		{
+			if( errno == EAGAIN ||errno == EINTR  )
+			{
+				if(pstClientInfo->pSocketSendBuf == NULL)
+				{
+					pstClientInfo->pSocketSendBuf=new CSocketBuf(pstServerInfo->dwInitSendBufLen,pstServerInfo->dwMaxSendBufLen);
+				}
+				if(!pstClientInfo->pSocketSendBuf->addData(pszData,iSize))
+				{
+					snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,write error buffer less than data",__FILE__,__LINE__);
+					return -1;
+				}
+				m_oEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CNetWorker::onWrite,this);
+			}
+			else
+			{
+				snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
+				close(stSession.iFd);
+				return -1;
+			}
+		}
 
 	}
+	else if((iSendBufSize = pstClientInfo->pSocketSendBuf->getSize()) > 0)
+	{
+
+		int iSendSize=lce::send(stSession.iFd,pstClientInfo->pSocketSendBuf->getData(),iSendBufSize);
+		if (iSendSize > 0 )
+		{
+			pstClientInfo->pSocketSendBuf->removeData(iSendSize);
+			iSendBufSize -= iSendSize;
+		}
+		else
+		{
+			if (errno != EAGAIN && errno != EINTR )
+			{
+				snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
+				close(stSession.iFd);
+				return -1;
+			}
+		}
+
+		if( iSendBufSize > 0)
+		{
+			if(!pstClientInfo->pSocketSendBuf->addData(pszData,iSize))
+			{
+				snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,write error buffer less than data",__FILE__,__LINE__);
+				return -1;
+			}
+
+			m_oEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CNetWorker::onWrite,this);
+		}
+		else
+		{
+			int iSendSize=lce::send(stSession.iFd,pszData,iSize);
+			if(iSendSize > 0 )
+			{
+				if (iSendSize < iSize)
+				{
+					if(!pstClientInfo->pSocketSendBuf->addData(pszData+iSendSize,iSize-iSendSize))
+					{
+						snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,write error buffer less than data",__FILE__,__LINE__);
+						return -1;
+					}
+					m_oEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CNetWorker::onWrite,this);
+				}
+				else
+				{
+					if(bClose)
+					{
+						close(stSession.iFd);
+					}
+					else
+					{
+						m_oEvent.delFdEvent(stSession.iFd,CEvent::EV_WRITE);
+					}
+				}
+			}
+			else
+			{
+				if( errno == EAGAIN ||errno == EINTR )
+				{
+					if(!pstClientInfo->pSocketSendBuf->addData(pszData,iSize))
+					{
+						snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,write error buffer less than data",__FILE__,__LINE__);
+						return -1;
+					}
+
+					m_oEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CNetWorker::onWrite,this);
+				}
+				else
+				{
+					snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
+					close(stSession.iFd);
+					return -1;
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+int CNetWorker::write(int iFd)
+{
+
+	SClientInfo * pstClientInfo = m_vecClients[iFd];
+	SServerInfo * pstServerInfo = pstClientInfo->pstServerInfo;
+
+	SSession stSession;
+	stSession.ddwBeginTime = lce::getTickCount();
+	stSession.stClientAddr = pstClientInfo->stClientAddr;
+	stSession.iFd = iFd;
+	stSession.iSvrId = pstServerInfo->iSrvId;
+
+
+	int iSendBufSize=pstClientInfo->pSocketSendBuf->getSize();
+
+	if(iSendBufSize > 0)
+	{
+		int iSendSize=lce::send(iFd,pstClientInfo->pSocketSendBuf->getData(),iSendBufSize);
+		if (iSendSize > 0 )
+		{
+			pstClientInfo->pSocketSendBuf->removeData(iSendSize);
+			iSendBufSize -= iSendSize;
+		}
+		else
+		{
+			if (errno != EAGAIN && errno != EINTR )
+			{
+				snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
+				close(iFd);
+				onError(stSession,m_szErrMsg,ERR_SOCKET);
+				return -1;
+			}
+		}
+	}
+
+	if( iSendBufSize == 0)
+	{
+		if (pstClientInfo->bNeedClose)
+			close(pstClientInfo->iFd);
+		else
+			m_oEvent.delFdEvent(iFd,CEvent::EV_WRITE);
+	}
+	return 0;
+
+}
+
+void CNetWorker::onWrite(int iFd,void *pData)
+{
+
+	CNetWorker *poWorker = (CNetWorker*)pData;
+
+	if(poWorker->isClose(iFd))
+	{
+		return;
+	}
+	poWorker->write(iFd);
+}
+
 
 };

@@ -20,7 +20,7 @@ using namespace std;
 namespace lce
 {
 
-static const float MAGIC_FD_TIMES =  1.5;
+static const float MAGIC_FD_TIMES =  1.2;
 
 struct SSession
 {
@@ -54,10 +54,11 @@ public:
 
 	enum PKG_TYPE
 	{
-		PKG_RAW = 0,
+		PKG_EXT = 0,
 		PKG_H2ST3 = 1,
 		PKG_H2LT3 = 2,
 		PKG_HTTP = 3,
+		PKG_RAW = 4,
 
 	};
 
@@ -69,6 +70,7 @@ public:
 		ERR_NO_BUFFER = 4,
 		ERR_NOT_READY = 5,
 		ERR_SYSTEM = 6,
+		ERR_PKG_FILTER = 7,
 	};
 
 private:
@@ -99,7 +101,7 @@ private:
 
 		~SServerInfo()
 		{
-			if(pPackageFilter != NULL) { delete pPackageFilter;pPackageFilter = NULL ;}
+			if(pPackageFilter != NULL && iPkgType!= PKG_EXT) { delete pPackageFilter;pPackageFilter = NULL ;}
 		}
     };
 
@@ -142,7 +144,7 @@ public:
 
     int createSrv(int iType,const string &sIp,uint16_t wPort,uint32_t dwInitRecvBufLen =10240,uint32_t dwMaxRecvBufLen=102400,uint32_t dwInitSendBufLen=102400,uint32_t dwMaxSendBufLen=1024000);
     int createAsyncConn(uint32_t dwInitRecvBufLen =10240,uint32_t dwMaxRecvBufLen=102400,uint32_t dwInitSendBufLen=102400,uint32_t dwMaxSendBufLen=1024000);
-    int setProcessor(int iSrvId,CProcessor * pProcessor,int iPkgType = 0);
+    int setProcessor(int iSrvId,CProcessor * pProcessor,int iPkgType = PKG_RAW);
 	int setPkgFilter(int iSrvId,CPackageFilter *pPkgFilter);
 
 	int rmSrv(int iSrvId);
