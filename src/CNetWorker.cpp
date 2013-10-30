@@ -60,29 +60,48 @@ int CNetWorker::createAsyncConn(int iPkgType /* = PKG_RAW */,uint32_t dwInitRecv
 
 	}
 
-
-	pstServerInfo->iSrvId=m_vecServers.size();
+	pstServerInfo->iSrvId = START_SRV_ID + m_mapServers.size();
 	pstServerInfo->iFd=0;
+	m_mapServers[pstServerInfo->iSrvId] = pstServerInfo;
 
-	m_vecServers.push_back(pstServerInfo);
 	return pstServerInfo->iSrvId;
 }
 
+
+int CNetWorker::setPkgFilter(int iSrvId,CPackageFilter *pPkgFilter)
+{
+	if(pPkgFilter == NULL)
+	{
+		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,pkgfilter pointer is null",__FILE__,__LINE__);
+		return -1;
+	}
+
+	map<uint32_t,SServerInfo *>::iterator it = m_mapServers.find(iSrvId);
+
+	if(it == m_mapServers.end())
+	{
+		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,iSrvId error",__FILE__,__LINE__);
+		return -1;
+	}
+
+	it->second->pPackageFilter = pPkgFilter;
+
+	return 0;
+}
+
+
 int CNetWorker::connect(int iSrvId,const string &sIp,uint16_t wPort)
 {
-	if( iSrvId <0 || iSrvId >(int) m_vecServers.size()-1)
+
+	map<uint32_t,SServerInfo *>::iterator it = m_mapServers.find(iSrvId);
+
+	if(it == m_mapServers.end())
 	{
 		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,iSrvId error",__FILE__,__LINE__);
 		return -1;
 	}
 
-	SServerInfo * pstServerInfo=m_vecServers[iSrvId];
-
-	if (pstServerInfo == NULL)
-	{
-		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,iSrvId error",__FILE__,__LINE__);
-		return -1;
-	}
+	SServerInfo *pstServerInfo = it->second;
 
 	if(pstServerInfo->iType == CONN_TCP)
 	{
@@ -127,22 +146,18 @@ int CNetWorker::connect(int iSrvId,const string &sIp,uint16_t wPort)
 				return -1;
 			}
 			return pstClientInfo->iFd;
-
-
 		}
 		else
 		{
 
 			if (errno == EINPROGRESS)
 			{
-
 				m_oEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_WRITE,CNetWorker::onConnect,pstClientInfo);
 				m_vecClients[pstClientInfo->iFd]=pstClientInfo;
 				return pstClientInfo->iFd;
 			}
 			else
 			{
-
 				snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
 				delete pstClientInfo;
 				pstClientInfo = NULL;
@@ -150,15 +165,12 @@ int CNetWorker::connect(int iSrvId,const string &sIp,uint16_t wPort)
 			}
 		}
 		return -1;
-
-
 	}
 	else
 	{
 		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,server iType error",__FILE__,__LINE__);
 		return -1;
 	}
-
 	return -1;
 }
 
@@ -193,8 +205,6 @@ void CNetWorker::onConnect(int iFd,void *pData)
 		poWorker->onConnect(stSession,false);
 		poWorker->close(iFd);
 	}
-
-
 }
 
 int CNetWorker::run()
@@ -270,8 +280,6 @@ void CNetWorker::onTcpRead(int iFd,void *pData)
 				break;
 			pstClientInfo->pSocketRecvBuf->removeData(iPkgLen);
 		}
-
-
 		if ( -2 == iWholePkgFlag )//非法数据包
 		{
 			//CCommMgr::getInstance().close(iFd);//非法数据包时，不关闭连接，而是重置接收缓冲区，是否关闭连接让上层处理
@@ -303,7 +311,6 @@ void CNetWorker::onTcpRead(int iFd,void *pData)
 			poWorker->close(iFd);
 			poWorker->onError(stSession,poWorker->m_szErrMsg,ERR_SOCKET);
 		}
-
 	}
 }
 
@@ -532,6 +539,35 @@ void CNetWorker::onWrite(int iFd,void *pData)
 		return;
 	}
 	poWorker->write(iFd);
+}
+
+
+int CNetWorker::addTimer(int iTimerId,uint32_t dwExpire,void *pData)
+{	
+	m_mapTimeProcs[iTimerId].pData = pData;
+	return m_oEvent.addTimer(iTimerId,dwExpire,CNetWorker::onTimerProc,this);
+}
+
+int CNetWorker::delTimer(int iTimerId)
+{
+	m_mapTimeProcs.erase(iTimerId);
+	return m_oEvent.delTimer(iTimerId);
+}
+
+void CNetWorker::onTimerProc(int iTimerId,void *pData)
+{
+	CNetWorker *poWorker = (CNetWorker*)pData;
+
+	MAP_TIMER_PROC::iterator it = poWorker->m_mapTimeProcs.find(iTimerId);
+
+	if(it != poWorker->m_mapTimeProcs.end())
+	{
+		void *pClientData = it->second.pData;
+		poWorker->m_mapTimeProcs.erase(iTimerId);
+
+		poWorker->onTimer(iTimerId,pClientData);
+	}
+
 }
 
 

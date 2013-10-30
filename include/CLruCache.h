@@ -1,6 +1,8 @@
+#ifndef __NCE_LRUCACHE_H__
+#define __NCE_LRUCACHE_H__
+
 #include<iostream>
 #include<map>
-#include<sstream>
 #include <stdint.h>
 #include <sys/time.h>
 #include <pthread.h>
@@ -155,3 +157,5 @@ private:
 	size_t m_dwSize;
 };
 };
+
+#endif

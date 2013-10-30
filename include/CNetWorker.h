@@ -13,7 +13,6 @@
 #include "CHttpPackageFilter.h"
 #include "CRawPackageFilter.h"
 #include "CEvent.h"
-#include "signal.h"
 #include "CThread.h"
 
 using namespace std;
@@ -21,6 +20,7 @@ using namespace std;
 namespace lce
 {
 	static const float FD_TIMES =  1.2;
+	static const uint32_t START_SRV_ID = 128;
 
 	enum APP_TYPE
 	{
@@ -116,6 +116,15 @@ namespace lce
 
 	class CNetWorker :public CThread
 	{
+	private:
+
+		struct SProcessor
+		{
+			void * pData;
+		};
+
+		typedef tr1::unordered_map <int,SProcessor> MAP_TIMER_PROC;
+
 
 	public:
 
@@ -134,13 +143,20 @@ namespace lce
 			throw std::runtime_error("not implement  onError");
 		}
 
+		virtual void onTimer(int iTimeId,void *pData){ 
+			throw std::runtime_error("not implement CProcessor onTimer");
+		}
+
 		int watch(int iFd,void *pData);
 		int close(const SSession &stSession);
 		int write(const SSession &stSession,const char* pszData, const int iSize,bool bClose = true);
 
 		int createAsyncConn(int iPkgType = PKG_RAW,uint32_t dwInitRecvBufLen =10240,uint32_t dwMaxRecvBufLen=102400,uint32_t dwInitSendBufLen=102400,uint32_t dwMaxSendBufLen=1024000);
-
+		int setPkgFilter(int iSrvId,CPackageFilter *pPkgFilter);
 		int connect(int iSrvId,const string &sIp,uint16_t wPort);
+
+		int addTimer(int iTimerId,uint32_t dwExpire,void *pData = NULL);
+		int delTimer(int iTimerId);
 
 	private:
 		int run();
@@ -155,11 +171,13 @@ namespace lce
 		static void onWrite(int iFd,void *pData);
 		static void onTcpRead(int iFd,void *pData);
 		static void onConnect(int iFd,void *pData);
+		static void onTimerProc(int iTimerId,void *pData);
+
 	private:
 		CEvent m_oEvent;
 		vector <SClientInfo *> m_vecClients;
-		vector <SServerInfo *> m_vecServers;
-
+		map <uint32_t,SServerInfo *> m_mapServers;
+		MAP_TIMER_PROC m_mapTimeProcs;
 		char m_szErrMsg[1024];
 		
 

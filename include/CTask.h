@@ -3,11 +3,11 @@
 
 #include <queue>
 #include <vector>
-#include "CThread.h"
 #include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include "CThread.h"
 
 using namespace std;
 
@@ -58,8 +58,7 @@ public:
                 {
                     pthread_cond_wait(&m_pTask->m_cond, &m_pTask->m_lock);//线程睡眠等待
                 }
-
-				if (!m_pTask->m_queTaskQueue.empty())
+				else
 				{
 					pstTaskInfo = m_pTask->m_queTaskQueue.front();
 					m_pTask->m_queTaskQueue.pop();

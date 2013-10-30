@@ -12,8 +12,6 @@
 #include "CHttpPackageFilter.h"
 #include "CRawPackageFilter.h"
 #include "CEvent.h"
-#include "signal.h"
-#include "CProcessor.h"
 #include "CThread.h"
 #include "CNetWorker.h"
 
