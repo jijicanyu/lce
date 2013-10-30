@@ -32,16 +32,6 @@ class CNetWorkerMgr
 public:
 	int init(uint32_t dwThreadNum = 1,uint32_t dwMaxClient = 10000);
 
-	static CNetWorkerMgr<T> & getInstance()
-	{
-
-		if (NULL == m_pInstance)
-		{
-			m_pInstance = new CNetWorkerMgr<T>;
-		}
-		return *m_pInstance;
-	}
-
 	int start()
 	{
 		for(size_t i=0;i<m_vecWorkers.size();++i)
@@ -69,13 +59,19 @@ public:
 
 private:
 
-	CNetWorkerMgr(){}
-
     static void onAccept(int iFd,void *pData);
 
+	SServerInfo * getServerInfoByFd(int iFd)
+	{
+		for(int i=0;i<m_vecServers.size();i++)
+		{
+			if(m_vecServers[i]->iFd == iFd)
+				return m_vecServers[i];
+		}
+		return NULL;
+	}
 
 private:
-	static CNetWorkerMgr<T> *m_pInstance;
 	NWMGR_ERROR_HANDLER m_pErrHandler;
 	CEvent m_oEvent;
 	char m_szErrMsg[1024];
@@ -181,7 +177,7 @@ int CNetWorkerMgr<T>::createSrv(const string &sIp,uint16_t wPort,int iPkgType,ui
 
 	}
 
-	if(m_oEvent.addFdEvent(pstServerInfo->iFd,CEvent::EV_READ,CNetWorkerMgr<T>::onAccept,pstServerInfo) < 0 )
+	if(m_oEvent.addFdEvent(pstServerInfo->iFd,CEvent::EV_READ,CNetWorkerMgr<T>::onAccept,this) < 0 )
 	{
 		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,m_oEvent.getErrorMsg());
 		lce::close(iFd);
@@ -234,7 +230,10 @@ int CNetWorkerMgr<T>::setPkgFilter(int iSrvId,CPackageFilter *pPkgFilter)
 template<class T>
 void CNetWorkerMgr<T>::onAccept(int iFd,void *pData)
 {
-	SServerInfo *pstServerInfo=(SServerInfo *)pData;
+
+	CNetWorkerMgr<T> *poNetWorkerMgr = (CNetWorkerMgr<T> *)pData;
+
+	SServerInfo *pstServerInfo = poNetWorkerMgr->getServerInfoByFd(iFd);
 
 	while(true) //循环接受请求，减小epoll软中断次数，提高性能
 	{
@@ -248,27 +247,27 @@ void CNetWorkerMgr<T>::onAccept(int iFd,void *pData)
 		{
 			if(errno != EAGAIN && errno != EINTR) //Resource temporarily unavailable
 			{
-				snprintf(CNetWorkerMgr<T>::getInstance().m_szErrMsg,sizeof(CNetWorkerMgr<T>::getInstance().m_szErrMsg),"onAccept %s,%d,accept errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
+				snprintf(poNetWorkerMgr->m_szErrMsg,sizeof(poNetWorkerMgr->m_szErrMsg),"onAccept %s,%d,accept errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
 				
-				if(CNetWorkerMgr<T>::getInstance().m_pErrHandler != NULL)
-					CNetWorkerMgr<T>::getInstance().m_pErrHandler(CNetWorkerMgr<T>::getInstance().m_szErrMsg);
+				if(poNetWorkerMgr->m_pErrHandler != NULL)
+					poNetWorkerMgr->m_pErrHandler(poNetWorkerMgr->m_szErrMsg);
 			}
 			break;
 		}
 
 		
-		if(iClientSock > CNetWorkerMgr<T>::getInstance().m_dwMaxClient)
+		if(iClientSock > poNetWorkerMgr->m_dwMaxClient)
 		{
-			snprintf(CNetWorkerMgr<T>::getInstance().m_szErrMsg,sizeof(CNetWorkerMgr<T>::getInstance().m_szErrMsg),"onAccept %s,%d,max clients errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
-			if(CNetWorkerMgr<T>::getInstance().m_pErrHandler != NULL)
-				CNetWorkerMgr<T>::getInstance().m_pErrHandler(CNetWorkerMgr<T>::getInstance().m_szErrMsg);
+			snprintf(poNetWorkerMgr->m_szErrMsg,sizeof(poNetWorkerMgr->m_szErrMsg),"onAccept %s,%d,max clients errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
+			if(poNetWorkerMgr->m_pErrHandler != NULL)
+				poNetWorkerMgr->m_pErrHandler(poNetWorkerMgr->m_szErrMsg);
 
 			lce::close(iClientSock);
 			continue;
 		}
 		
 
-		CNetWorkerMgr<T>::getInstance().m_dwClientNum++;
+		poNetWorkerMgr->m_dwClientNum++;
 		lce::setReUseAddr(iClientSock);
 		lce::setNBlock(iClientSock);
 
@@ -277,8 +276,8 @@ void CNetWorkerMgr<T>::onAccept(int iFd,void *pData)
 		pstClientInfo->stClientAddr = stClientAddr;
 		pstClientInfo->pstServerInfo = pstServerInfo;
 
-		int iIndex = CNetWorkerMgr<T>::getInstance().m_dwClientNum % CNetWorkerMgr<T>::getInstance().m_vecWorkers.size();
-		pstClientInfo->poWorker = CNetWorkerMgr<T>::getInstance().m_vecWorkers[iIndex];
+		int iIndex = poNetWorkerMgr->m_dwClientNum % poNetWorkerMgr->m_vecWorkers.size();
+		pstClientInfo->poWorker = poNetWorkerMgr->m_vecWorkers[iIndex];
 		
 		pstClientInfo->poWorker->watch(iClientSock,pstClientInfo);
 	}

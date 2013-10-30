@@ -33,19 +33,19 @@ public:
 	}
 };
 
-template<>	CNetWorkerMgr<CWorker>* CNetWorkerMgr<CWorker>::m_pInstance = NULL;
-
 
 int main(int argc,char **argv)
 {
  
-	CNetWorkerMgr<CWorker>::getInstance().init(2,10000);
+	CNetWorkerMgr<CWorker> oNetWorkerMgr;
+		
+	oNetWorkerMgr.init(2,10000);
 	
-	int iSrv1 = CNetWorkerMgr<CWorker>::getInstance().createSrv("0.0.0.0",8002,PKG_HTTP);
+	int iSrv1 = oNetWorkerMgr.createSrv("0.0.0.0",8002,PKG_HTTP);
 
-	cout<<CNetWorkerMgr<CWorker>::getInstance().getErrMsg()<<endl;
+	cout<<oNetWorkerMgr.getErrMsg()<<endl;
 
-	CNetWorkerMgr<CWorker>::getInstance().start();
+	oNetWorkerMgr.start();
 
 	return 0;
 }
