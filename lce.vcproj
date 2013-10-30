@@ -213,7 +213,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\CLFQueue.h"
+				RelativePath=".\include\CLFQueue.h"
 				>
 			</File>
 			<File
@@ -225,11 +225,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\CNetWorker.h"
+				RelativePath=".\include\CNetWorker.h"
 				>
 			</File>
 			<File
-				RelativePath=".\CNetWorkerMgr.h"
+				RelativePath=".\include\CNetWorkerMgr.h"
 				>
 			</File>
 			<File
@@ -317,11 +317,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\CNetWorker.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CNetWorkerMgr.cpp"
+				RelativePath=".\src\CNetWorker.cpp"
 				>
 			</File>
 			<File
@@ -367,6 +363,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\test\Test_CNetWorker.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\test\Test_Connector.cpp"
 				>
 			</File>
@@ -396,6 +396,10 @@
 			</File>
 			<File
 				RelativePath=".\test\Test_StringHelper.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\test\Test_Template.cpp"
 				>
 			</File>
 			<File

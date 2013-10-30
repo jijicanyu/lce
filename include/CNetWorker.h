@@ -88,6 +88,8 @@ namespace lce
 		vector <SClientInfo *> m_vecClients;
 		int m_iEventFd;
 		CLFQueue<SClientInfo *> m_queClients;
+		char m_szErrMsg[1024];
+
 	};
 };
 
