@@ -148,24 +148,35 @@ int CAsyncLog::run()
 
 			if(m_iCurWriteBufferFlag == 1)
 			{
+				if(m_poWriteBuffer2 == NULL)
+					m_poWriteBuffer2 = new std::stringstream;
+
 				m_mutex.lock();
 				m_poCurWirteBuffer = m_poWriteBuffer2;
 				m_mutex.unlock();
 
 				writeFile(m_poWriteBuffer1->str(),false);
-				m_poWriteBuffer1->str("");
+				delete m_poWriteBuffer1;
+				m_poWriteBuffer1 = NULL;
+
 				m_iCurWriteBufferFlag = 2;
 			}
 			else if(m_iCurWriteBufferFlag == 2)
 			{
+				if(m_poWriteBuffer1 == NULL)
+					m_poWriteBuffer1 = new std::stringstream;
+
 				m_mutex.lock();
 				m_poCurWirteBuffer = m_poWriteBuffer1;
 				m_mutex.unlock();
-
 				writeFile(m_poWriteBuffer2->str(),false);
-				m_poWriteBuffer2->str("");
+
+				delete m_poWriteBuffer2;
+				m_poWriteBuffer2 = NULL;
+
 				m_iCurWriteBufferFlag = 1;
 			}
+			
 			iMillSecs = 0;
 		}
 		iMillSecs += 100;
