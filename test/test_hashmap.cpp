@@ -1,25 +1,16 @@
-#include "../CHashMap.h"
-#include "../CShmHashMap.h"
+#include "CLruCache.h"
 #include <iostream>
+#include <string>
 using namespace  std;
 using namespace lce;
+
 int main(int argc, char **argv)
 {
-	CHashMap<int> hashMap;
-	hashMap.init(1);
-	cout<<hashMap.empty()<<endl;
-	hashMap.insert(123,1231111);
+	CLruCache<string,string> cache;
+	cache.init();
 
-	CHashMap<int>::iterator it = hashMap.find(123);
-
-	cout<<hashMap.empty()<<endl;
-
-	cout<<hashMap.full()<<endl;
-
-	cout<<*it<<endl;
-	hashMap.erase(it);
-	cout<<hashMap.empty()<<endl;
-
-	cout<<hashMap.full()<<endl;
-	return 0;
+	cache.set("dsdsds","dsasdasd");
+	string sValue;
+	cache.get("dsdsds",sValue);
+	cout<<sValue<<endl;
 }
