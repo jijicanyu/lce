@@ -5,16 +5,6 @@ namespace lce
 {
 
 
-CFileLog::CFileLog(const std::string& sLogFilePath,const unsigned long dwLogFileMaxSize, const unsigned int uiLogFileNum, const bool bShowCmd)
-	:m_sLogFilePath(sLogFilePath+".log"),
-	m_sLogBasePath(sLogFilePath),
-	m_dwLogFileMaxSize(dwLogFileMaxSize),
-	m_uiLogFileNum(uiLogFileNum),
-	m_bShowCmd(bShowCmd)
-{
-
-}
-
 CFileLog::~CFileLog()
 {
 	if (m_ofsOutFile.is_open())
@@ -25,8 +15,8 @@ CFileLog::~CFileLog()
 
 bool CFileLog::init(const std::string &sLogFilePath, const unsigned long dwLogFileMaxSize, const unsigned int uiLogFileNum, const bool bShowCmd)
 {
-
-	m_sLogFilePath=sLogFilePath+".log",
+	m_sCurDate = getDate();
+	m_sLogFilePath=sLogFilePath+"_"+m_sCurDate+".log",
 	m_sLogBasePath = sLogFilePath;
 	m_dwLogFileMaxSize = dwLogFileMaxSize;
 	m_uiLogFileNum = uiLogFileNum;
@@ -37,6 +27,17 @@ bool CFileLog::init(const std::string &sLogFilePath, const unsigned long dwLogFi
 
 bool CFileLog::shiftFiles()
 {
+
+	if (m_sCurDate != getDate())
+	{
+		m_sLogFilePath=m_sLogBasePath+"_"+getDate()+".log";
+		m_sCurDate = getDate();
+		if (m_ofsOutFile.is_open())
+		{
+			m_ofsOutFile.close();
+		}
+	}
+
 	size_t dwFileSize=this->getFileSize(m_sLogFilePath);
 	if (dwFileSize>=m_dwLogFileMaxSize)
 	{
@@ -48,7 +49,7 @@ bool CFileLog::shiftFiles()
 		char szLogFileName[1024];
 		char szNewLogFileName[1024];
 
-		snprintf(szLogFileName,sizeof(szLogFileName),"%s%u.log",m_sLogBasePath.c_str(),m_uiLogFileNum-1);
+		snprintf(szLogFileName,sizeof(szLogFileName),"%s_%s_%u.log",m_sLogBasePath.c_str(),getDate().c_str(),m_uiLogFileNum-1);
 		if (access(szLogFileName, F_OK) == 0)
 		{
 			if (remove(szLogFileName) < 0 )
@@ -61,13 +62,13 @@ bool CFileLog::shiftFiles()
 		for(int i=m_uiLogFileNum-2; i>=0; i--)
 		{
 			if (i == 0)
-				snprintf(szLogFileName,sizeof(szLogFileName),"%s.log",m_sLogBasePath.c_str());
+				snprintf(szLogFileName,sizeof(szLogFileName),"%s_%s.log",m_sLogBasePath.c_str(),getDate().c_str());
 			else
-				snprintf(szLogFileName,sizeof(szLogFileName),"%s%u.log",m_sLogBasePath.c_str(),i);
+				snprintf(szLogFileName,sizeof(szLogFileName),"%s_%s_%u.log",m_sLogBasePath.c_str(),getDate().c_str(),i);
 
 			if (access(szLogFileName, F_OK) == 0)
 			{
-				snprintf(szNewLogFileName,sizeof(szNewLogFileName),"%s%d.log",m_sLogBasePath.c_str(),i+1);
+				snprintf(szNewLogFileName,sizeof(szNewLogFileName),"%s_%s_%d.log",m_sLogBasePath.c_str(),getDate().c_str(),i+1);
 				if (rename(szLogFileName,szNewLogFileName) < 0 )
 				{
 					snprintf(m_szErrMsg, sizeof(m_szErrMsg),"rename error:errno=%d.",errno);

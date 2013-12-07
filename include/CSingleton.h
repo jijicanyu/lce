@@ -13,12 +13,12 @@ namespace lce
 		{
 			if (m_pInstance == NULL) 
 			{
-				pthread_mutex_lock(&m_mutexCreate);
+				pthread_mutex_lock(&m_mutex);
 				if (m_pInstance == NULL) 
 				{
 					m_pInstance = new T;
 				}
-				pthread_mutex_unlock(&m_mutexCreate);
+				pthread_mutex_unlock(&m_mutex);
 			}
 			return *m_pInstance;
 		}
@@ -32,14 +32,14 @@ namespace lce
 
 	private:
 		static T*               m_pInstance;
-		static pthread_mutex_t  m_mutexCreate;
+		static pthread_mutex_t  m_mutex;
 	};
 
 	template<typename T>
 	T* CSingleton<T>::m_pInstance = NULL;
 
 	template<typename T>
-	pthread_mutex_t CSingleton<T>::m_mutexCreate = PTHREAD_MUTEX_INITIALIZER;
+	pthread_mutex_t CSingleton<T>::m_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 }
 
