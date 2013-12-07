@@ -69,7 +69,7 @@ public:
 
                 if (bHaveTask)
                 {
-                    m_pTask->onWork(stTaskInfo->iTaskType,stTaskInfo->pData,m_iIndex);
+                    m_pTask->onWork(stTaskInfo.iTaskType,stTaskInfo.pData,m_iIndex);
                 }
 
             }

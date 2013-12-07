@@ -41,8 +41,8 @@ namespace lce
     int CTask::dispatch(int iTaskType,void *pData)
     {
         STaskInfo stTaskInfo;
-        stTaskInfo->iTaskType = iTaskType;
-        stTaskInfo->pData = pData;
+        stTaskInfo.iTaskType = iTaskType;
+        stTaskInfo.pData = pData;
 
         pthread_mutex_lock(&m_lock);
 
