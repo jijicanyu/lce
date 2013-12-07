@@ -97,17 +97,6 @@ bool CAsyncLog::shiftFiles()
 bool CAsyncLog::writeFile(const std::string &str, const bool bEnd)
 {
 
-	if (!m_ofsOutFile.is_open())
-	{
-		m_ofsOutFile.open(m_sLogFilePath.c_str(),std::ios::out|std::ios::app);
-	}
-
-	if(m_ofsOutFile.fail())
-	{
-		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"open file<%s> err!", m_sLogFilePath.c_str());
-		return false;
-	}
-		
 	if (!shiftFiles())
 	{
 		return false;
@@ -143,7 +132,7 @@ int CAsyncLog::run()
 	{
 		usleep(100000);
 		
-		if(iMillSecs > m_iLogSecs*1000 ||m_poCurWirteBuffer->str().size() > 1024*1024*10)
+		if((iMillSecs > m_iLogSecs*1000 && m_poCurWirteBuffer->str().size()>0) ||m_poCurWirteBuffer->str().size() > 1024*1024*10)
 		{
 
 			if(m_iCurWriteBufferFlag == 1)

@@ -101,6 +101,7 @@ namespace lce
 		int iFd;
 		bool bNeedClose;
 		void *pData;
+		uint64_t ddwBeginTime;
 		SServerInfo *pstServerInfo;
  		CSocketBuf *pSocketRecvBuf;
 		CSocketBuf *pSocketSendBuf;

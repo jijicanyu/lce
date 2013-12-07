@@ -115,6 +115,7 @@ int CNetWorker::connect(int iSrvId,const string &sIp,uint16_t wPort,void *pData)
 		SClientInfo * pstClientInfo = new SClientInfo;
 		pstClientInfo->iFd=lce::createTcpSock();
 		pstClientInfo->pstServerInfo = pstServerInfo;
+		pstClientInfo->ddwBeginTime = lce::getTickCount();
 		pstClientInfo->pData = pData;
 
 		if (pstClientInfo->iFd < 0)
@@ -139,7 +140,7 @@ int CNetWorker::connect(int iSrvId,const string &sIp,uint16_t wPort,void *pData)
 		if(iRet != -1)
 		{
 			SSession stSession;
-			stSession.ddwBeginTime=lce::getTickCount();
+			stSession.ddwBeginTime = pstClientInfo->ddwBeginTime;
 			stSession.iFd=pstClientInfo->iFd;
 			stSession.iSvrId=pstServerInfo->iSrvId;
 			stSession.stClientAddr=pstClientInfo->stClientAddr;
@@ -202,7 +203,7 @@ void CNetWorker::onConnect(int iFd,void *pData)
 
 
 	SSession stSession;
-	stSession.ddwBeginTime = lce::getTickCount();
+	stSession.ddwBeginTime = pstClientInfo->ddwBeginTime;
 	stSession.iFd = iFd;
 	stSession.iSvrId = pstServerInfo->iSrvId;
 	stSession.stClientAddr = pstClientInfo->stClientAddr;
@@ -244,7 +245,7 @@ void CNetWorker::onTcpRead(int iFd,void *pData)
 	poWorker->m_vecClients[iFd] = pstClientInfo;
 
 	SSession stSession;
-	stSession.ddwBeginTime = lce::getTickCount();
+	stSession.ddwBeginTime = pstClientInfo->ddwBeginTime;
 	stSession.iFd = iFd;
 	stSession.iSvrId = pstClientInfo->pstServerInfo->iSrvId;
 	stSession.stClientAddr = pstClientInfo->stClientAddr;

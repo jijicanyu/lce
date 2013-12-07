@@ -278,7 +278,7 @@ void CNetWorkerMgr<T>::onAccept(int iFd,void *pData)
 		pstClientInfo->iFd = iClientSock;
 		pstClientInfo->stClientAddr = stClientAddr;
 		pstClientInfo->pstServerInfo = pstServerInfo;
-
+		pstClientInfo->ddwBeginTime = lce::getTickCount();
 		int iIndex = poNetWorkerMgr->m_dwClientNum % poNetWorkerMgr->m_vecWorkers.size();
 		pstClientInfo->pData = poNetWorkerMgr->m_vecWorkers[iIndex];
 		poNetWorkerMgr->m_vecWorkers[iIndex]->watch(iClientSock,pstClientInfo);

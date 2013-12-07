@@ -20,7 +20,6 @@ public:
     typedef struct
     {
         int iTaskType;
-        int iTimeOut;
         void *pData;
     }STaskInfo;
 
@@ -50,7 +49,8 @@ public:
         {
             while(!isStoped())
             {
-                STaskInfo *pstTaskInfo = NULL;
+                STaskInfo stTaskInfo;
+				bool bHaveTask = false;
 
                 pthread_mutex_lock(&m_pTask->m_lock);
 
@@ -60,16 +60,16 @@ public:
                 }
 				else
 				{
-					pstTaskInfo = m_pTask->m_queTaskQueue.front();
+					stTaskInfo = m_pTask->m_queTaskQueue.front();
 					m_pTask->m_queTaskQueue.pop();
+					bHaveTask = true;
 				}
 
                 pthread_mutex_unlock(&m_pTask->m_lock);
 
-                if (pstTaskInfo != NULL)
+                if (bHaveTask)
                 {
-                    m_pTask->onWork(pstTaskInfo->iTaskType,pstTaskInfo->pData,m_iIndex);
-                    delete pstTaskInfo;
+                    m_pTask->onWork(stTaskInfo->iTaskType,stTaskInfo->pData,m_iIndex);
                 }
 
             }
@@ -95,7 +95,7 @@ private:
     pthread_mutex_t  m_lock;
     pthread_cond_t m_cond;
     vector <CTaskThread *> m_vecTaskThreads;
-    queue <STaskInfo *> m_queTaskQueue;
+    queue <STaskInfo> m_queTaskQueue;
     char m_szErrMsg[1024];
     int m_iMaxSize;
 };

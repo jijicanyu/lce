@@ -40,21 +40,20 @@ namespace lce
 
     int CTask::dispatch(int iTaskType,void *pData)
     {
-        STaskInfo *pstTaskInfo = new STaskInfo;
-        pstTaskInfo->iTaskType = iTaskType;
-        pstTaskInfo->pData = pData;
+        STaskInfo stTaskInfo;
+        stTaskInfo->iTaskType = iTaskType;
+        stTaskInfo->pData = pData;
 
         pthread_mutex_lock(&m_lock);
 
         if(m_queTaskQueue.size() > (size_t)m_iMaxSize ) //判定队列size 放在锁空间内
         {
             snprintf(m_szErrMsg,sizeof(m_szErrMsg),"file:%s,line:%d,queue over size :%d",__FILE__,__LINE__,(int)m_queTaskQueue.size());
-            delete pstTaskInfo;
 			pthread_mutex_unlock(&m_lock);
             return -1;
         }
-        m_queTaskQueue.push(pstTaskInfo);
-        
+        m_queTaskQueue.push(stTaskInfo);
+
         pthread_mutex_unlock(&m_lock);
         pthread_cond_signal(&m_cond); //唤醒睡眠线程
         return 0;
@@ -62,20 +61,12 @@ namespace lce
 
     CTask::~CTask()
     {
-
         pthread_mutex_destroy(&m_lock);
         pthread_cond_destroy(&m_cond);
 
         for(vector<CTaskThread *>::iterator it1=m_vecTaskThreads.begin();it1!=m_vecTaskThreads.end();++it1)
         {
             delete (*it1);
-        }
-
-        while(!m_queTaskQueue.empty())
-        {
-            STaskInfo *pstTaskInfo = m_queTaskQueue.front();
-            delete pstTaskInfo;
-            m_queTaskQueue.pop();
         }
     }
 };

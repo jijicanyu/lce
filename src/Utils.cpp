@@ -14,14 +14,7 @@ int listen(int iFd)
 
 int setNBlock(int iFd)
 {
-    int opts;
-    opts=fcntl(iFd,F_GETFL);
-    if(opts<0)
-    {
-        return -1;
-    }
-    opts = opts|O_NONBLOCK;
-    if(fcntl(iFd,F_SETFL,opts)<0)
+    if(fcntl(iFd,F_SETFL, O_NONBLOCK | O_RDWR) < 0)
     {
         return -1;
     }
@@ -57,8 +50,8 @@ int close(const int iFd)
 int setReUseAddr(const int iFd)
 {
     // 如果服务器终止后,服务器可以第二次快速启动而不用等待一段时间
-    int nREUSEADDR = 1;
-    if(setsockopt(iFd, SOL_SOCKET, SO_REUSEADDR, (const char*)&nREUSEADDR, sizeof(int)) != 0)
+    int reuse = 1;
+    if(setsockopt(iFd, SOL_SOCKET, SO_REUSEADDR, (const char*)&reuse, sizeof(int)) != 0)
     {
         return -1;
     }
