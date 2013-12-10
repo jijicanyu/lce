@@ -54,9 +54,9 @@ namespace lce
             return -1;
         }
         m_queTaskQueue.push(pstTaskInfo);
-		pthread_cond_signal(&m_cond); //唤醒睡眠线程
+        
         pthread_mutex_unlock(&m_lock);
-
+        pthread_cond_signal(&m_cond); //唤醒睡眠线程
         return 0;
     }
 
