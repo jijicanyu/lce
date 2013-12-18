@@ -5,7 +5,7 @@ namespace lce
 
 int listen(int iFd)
 {
-    if(::listen(iFd,1024) == -1)
+    if(::listen(iFd,4096) == -1)
     {
         return -1;
     }

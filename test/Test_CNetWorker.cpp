@@ -9,6 +9,7 @@ class CWorker:public CNetWorker
 public:
 	int init()
 	{
+		m_dwCount = 0;
 		addTimer(0,1000,NULL);
 		m_iConnHandler = createAsyncConn(PKG_HTTP);
 		cout<<m_iConnHandler<<endl;
@@ -16,7 +17,10 @@ public:
 	}
 	void onRead(SSession &stSession,const char * pszData, const int iSize)
 	{
+		m_dwCount++;
+		write(stSession,pszData,iSize,false);
 
+		/*
 		if(stSession.iSvrId >= START_SRV_ID)
 		{
 			cout<<"id="<<getId()<<",fd="<<stSession.iFd<<",onRead"<<endl;
@@ -35,6 +39,7 @@ public:
 
 			write(stSession,(char*)sData.data(),sData.size());
 		}
+		*/
 
 	}
 	void onClose(SSession &stSession)
@@ -46,24 +51,22 @@ public:
 		cout<<"id="<<getId()<<",fd="<<stSession.iFd<<",onConnect"<<endl;
 		string sReq = "GET / HTTP/1.1\r\n\r\n";
 		write(stSession,sReq.data(),sReq.size(),false);
-	}
-
-	void onError(SSession &stSession,const char * szErrMsg,int iError)
-	{
-		cout<<"onError"<<szErrMsg<<endl;
-	}
+	}    
 
 	void onTimer(int iTimeId,void *pData)
 	{
-		cout<<"onTimer"<<endl;
 
-		connect(m_iConnHandler,"61.135.169.105",80);
+		cout<<"id="<<getId()<<",req="<<m_dwCount<<endl  ;
+		addTimer(0,1000,NULL);
+
+		//connect(m_iConnHandler,"61.135.169.105",80);
 		//addTimer(0,1000,NULL);
 
 	}
 
 private:
 	int m_iConnHandler;
+	uint32_t m_dwCount;
 };
 
 int main(int argc,char **argv)
@@ -71,9 +74,9 @@ int main(int argc,char **argv)
  
 	CNetWorkerMgr<CWorker> oNetWorkerMgr;
 		
-	oNetWorkerMgr.init(2,10000);
+	oNetWorkerMgr.init(4,10000);
 	
-	int iSrv1 = oNetWorkerMgr.createSrv("0.0.0.0",8002,PKG_HTTP);
+	int iSrv1 = oNetWorkerMgr.createSrv("0.0.0.0",8001,PKG_H2LT3);
 
 	cout<<oNetWorkerMgr.getErrMsg()<<endl;
 

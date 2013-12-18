@@ -637,7 +637,6 @@ int CCommMgr::write(const SSession &stSession,const char* pszData, const int iSi
             else
             {
                 snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
-                close(stSession.iFd);
                 return -1;
             }
         }
@@ -657,7 +656,6 @@ int CCommMgr::write(const SSession &stSession,const char* pszData, const int iSi
             if (errno != EAGAIN && errno != EINTR )
             {
                 snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
-                close(stSession.iFd);
                 return -1;
             }
         }
@@ -726,7 +724,6 @@ int CCommMgr::write(const SSession &stSession,const char* pszData, const int iSi
                 else
                 {
                     snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
-                    close(stSession.iFd);
                     return -1;
                 }
             }
@@ -893,7 +890,7 @@ int CCommMgr::connect(int iSrvId,const string &sIp,uint16_t wPort,void *pData)
         lce::setReUseAddr(iFd);
         lce::setNBlock(iFd);
 
-
+		m_vecClients[iFd].iFd = iFd;
         m_vecClients[iFd].stClientAddr.sin_family=AF_INET;
 		m_vecClients[iFd].stClientAddr.sin_port=htons(wPort);
 		m_vecClients[iFd].stClientAddr.sin_addr.s_addr = inet_addr(sIp.c_str());

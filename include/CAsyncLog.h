@@ -26,21 +26,6 @@ public:
 	~CAsyncLog(void);
 
 	bool init(const std::string& sLogFilePath="",int iLogSecs = 1,const unsigned long dwLogFileMaxSize=1000000,	const unsigned int uiLogFileNum=5,const bool bShowCmd=false);
-
-	template<class T>
-	std::stringstream& operator<<(const T& t)
-	{
-
-		std::stringstream sstr;
-		sstr << t;
-		std::string sLog;
-		sLog = "[" + getDateTime() + "]:";
-
-		writeBuffer(sLog+sstr.str(), false);
-		return *m_poCurWirteBuffer;
-
-	}
-
 	bool write(const std::string& sMsg);
 	bool writeRaw(const std::string& sMsg);
 	bool write(const char *sFormat, ...);
@@ -88,9 +73,9 @@ private:
 private:
 	char m_szErrMsg[1024];
 
-	std::stringstream *m_poWriteBuffer1;
-	std::stringstream *m_poWriteBuffer2;
-	std::stringstream *m_poCurWirteBuffer;
+	std::string *m_poWriteBuffer1;
+	std::string *m_poWriteBuffer2;
+	std::string *m_poCurWirteBuffer;
 	int m_iCurWriteBufferFlag;
 
 	std::string m_sCurDate;

@@ -214,7 +214,7 @@ int main()
 	oPkg>>b;
 
 
-    CProCenter::getInstance().init(3,50000);
+    CProCenter::getInstance().init(7,50000);
     CProCenter::getInstance().run();
 
     if(CCommMgr::getInstance().init(50000) < 0)

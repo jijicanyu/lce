@@ -159,13 +159,20 @@ int CNetWorker::connect(int iSrvId,const string &sIp,uint16_t wPort,void *pData)
 
 			if (errno == EINPROGRESS)
 			{
-				m_oEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_WRITE,CNetWorker::onConnect,this);
+				if(m_oEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_WRITE,CNetWorker::onConnect,this) != 0)
+				{
+					lce::close(pstClientInfo->iFd);
+					delete pstClientInfo;
+					snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s",m_oEvent.getErrorMsg());
+					return -1;
+				}
 				m_vecClients[pstClientInfo->iFd]=pstClientInfo;
 				return pstClientInfo->iFd;
 			}
 			else
 			{
 				snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
+				lce::close(pstClientInfo->iFd);
 				delete pstClientInfo;
 				pstClientInfo = NULL;
 				return -1;
@@ -215,7 +222,12 @@ void CNetWorker::onConnect(int iFd,void *pData)
 		if(!poWorker->isClose(iFd))
 		{
 			pstClientInfo->pData = poWorker;
-			poWorker->m_oEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_READ,CNetWorker::onTcpRead,pstClientInfo);
+			if(poWorker->m_oEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_READ,CNetWorker::onTcpRead,pstClientInfo) != 0)
+			{
+				poWorker->close(iFd);
+				snprintf(poWorker->m_szErrMsg,sizeof(poWorker->m_szErrMsg),"%s",poWorker->m_oEvent.getErrorMsg());
+				poWorker->onError(stSession,poWorker->m_szErrMsg,ERR_NO_BUFFER);
+			}
 		}
 	}
 	else
@@ -384,7 +396,11 @@ int CNetWorker::write(const SSession &stSession,const char* pszData, const int i
 					snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,write error buffer less than data",__FILE__,__LINE__);
 					return -1;
 				}
-				m_oEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CNetWorker::onWrite,this);
+				if(m_oEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CNetWorker::onWrite,this) !=0)
+				{
+					snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s",m_oEvent.getErrorMsg());
+					return -1;
+				}
 			}
 			else
 			{
@@ -411,12 +427,15 @@ int CNetWorker::write(const SSession &stSession,const char* pszData, const int i
 					snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,write error buffer less than data",__FILE__,__LINE__);
 					return -1;
 				}
-				m_oEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CNetWorker::onWrite,this);
+				if(m_oEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CNetWorker::onWrite,this) != 0)
+				{
+					snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s",m_oEvent.getErrorMsg());
+					return -1;
+				}
 			}
 			else
 			{
 				snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
-				close(stSession.iFd);
 				return -1;
 			}
 		}
@@ -436,7 +455,6 @@ int CNetWorker::write(const SSession &stSession,const char* pszData, const int i
 			if (errno != EAGAIN && errno != EINTR )
 			{
 				snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
-				close(stSession.iFd);
 				return -1;
 			}
 		}
@@ -449,7 +467,11 @@ int CNetWorker::write(const SSession &stSession,const char* pszData, const int i
 				return -1;
 			}
 
-			m_oEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CNetWorker::onWrite,this);
+			if(m_oEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CNetWorker::onWrite,this) !=0)
+			{
+				snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s",m_oEvent.getErrorMsg());
+				return -1;
+			}
 		}
 		else
 		{
@@ -463,7 +485,12 @@ int CNetWorker::write(const SSession &stSession,const char* pszData, const int i
 						snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,write error buffer less than data",__FILE__,__LINE__);
 						return -1;
 					}
-					m_oEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CNetWorker::onWrite,this);
+
+					if(m_oEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CNetWorker::onWrite,this) != 0)
+					{
+						snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s",m_oEvent.getErrorMsg());
+						return -1;
+					}
 				}
 				else
 				{
@@ -487,12 +514,15 @@ int CNetWorker::write(const SSession &stSession,const char* pszData, const int i
 						return -1;
 					}
 
-					m_oEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CNetWorker::onWrite,this);
+					if(m_oEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CNetWorker::onWrite,this) != 0)
+					{
+						snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s",m_oEvent.getErrorMsg());
+						return -1;
+					}
 				}
 				else
 				{
 					snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
-					close(stSession.iFd);
 					return -1;
 				}
 			}

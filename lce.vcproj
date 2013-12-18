@@ -383,6 +383,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Test_Conn.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\test\Test_Connector.cpp"
 				>
 			</File>
@@ -400,6 +404,10 @@
 			</File>
 			<File
 				RelativePath=".\test\test_lf.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\test\Test_Server.cpp"
 				>
 			</File>
 			<File

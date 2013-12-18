@@ -26,8 +26,8 @@ bool CAsyncLog::init(const std::string &sLogFilePath,int iLogSecs, const unsigne
 	m_uiLogFileNum = uiLogFileNum;
 	m_bShowCmd = bShowCmd;
 
-	m_poWriteBuffer1 = new std::stringstream;
-	m_poWriteBuffer2 = new std::stringstream;
+	m_poWriteBuffer1 = new std::string;
+	m_poWriteBuffer2 = new std::string;
 	m_poCurWirteBuffer = m_poWriteBuffer1;
 	m_iLogSecs = iLogSecs;
 	m_iCurWriteBufferFlag = 1;
@@ -120,7 +120,9 @@ bool CAsyncLog::writeFile(const std::string &str, const bool bEnd)
 	{
 		m_ofsOutFile << std::endl;
 	}
-	m_ofsOutFile.flush();
+
+	//m_ofsOutFile.flush();
+
 	return true;
 }
 
@@ -132,19 +134,19 @@ int CAsyncLog::run()
 	{
 		usleep(100000);
 		
-		if((iMillSecs > m_iLogSecs*1000 && m_poCurWirteBuffer->str().size()>0) ||m_poCurWirteBuffer->str().size() > 1024*1024*10)
+		if((iMillSecs >= m_iLogSecs*1000 && m_poCurWirteBuffer->size()>0) ||m_poCurWirteBuffer->size() > 1024*1024*2)
 		{
 
 			if(m_iCurWriteBufferFlag == 1)
 			{
 				if(m_poWriteBuffer2 == NULL)
-					m_poWriteBuffer2 = new std::stringstream;
+					m_poWriteBuffer2 = new std::string;
 
 				m_mutex.lock();
 				m_poCurWirteBuffer = m_poWriteBuffer2;
 				m_mutex.unlock();
 
-				writeFile(m_poWriteBuffer1->str(),false);
+				writeFile(*m_poWriteBuffer1,false);
 				delete m_poWriteBuffer1;
 				m_poWriteBuffer1 = NULL;
 
@@ -153,12 +155,12 @@ int CAsyncLog::run()
 			else if(m_iCurWriteBufferFlag == 2)
 			{
 				if(m_poWriteBuffer1 == NULL)
-					m_poWriteBuffer1 = new std::stringstream;
+					m_poWriteBuffer1 = new std::string;
 
 				m_mutex.lock();
 				m_poCurWirteBuffer = m_poWriteBuffer1;
 				m_mutex.unlock();
-				writeFile(m_poWriteBuffer2->str(),false);
+				writeFile(*m_poWriteBuffer2,false);
 
 				delete m_poWriteBuffer2;
 				m_poWriteBuffer2 = NULL;
@@ -186,11 +188,11 @@ bool CAsyncLog::writeBuffer(const std::string &str, const bool bEnd)
 		std::cout << str << std::endl;
 	}
 
-	(*m_poCurWirteBuffer) << str;
+	m_poCurWirteBuffer->append(str);
 
 	if (bEnd)
 	{
-		(*m_poCurWirteBuffer) << std::endl;
+		m_poCurWirteBuffer->append("\n");
 	}
 
 	return true;

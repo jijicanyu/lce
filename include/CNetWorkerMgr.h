@@ -281,7 +281,15 @@ void CNetWorkerMgr<T>::onAccept(int iFd,void *pData)
 		pstClientInfo->ddwBeginTime = lce::getTickCount();
 		int iIndex = poNetWorkerMgr->m_dwClientNum % poNetWorkerMgr->m_vecWorkers.size();
 		pstClientInfo->pData = poNetWorkerMgr->m_vecWorkers[iIndex];
-		poNetWorkerMgr->m_vecWorkers[iIndex]->watch(iClientSock,pstClientInfo);
+
+		if(poNetWorkerMgr->m_vecWorkers[iIndex]->watch(iClientSock,pstClientInfo) != 0)
+		{
+			lce::close(iClientSock);
+			delete pstClientInfo;
+			snprintf(poNetWorkerMgr->m_szErrMsg,sizeof(poNetWorkerMgr->m_szErrMsg),"onAccept %s,%d,add fd to event error errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
+			if(poNetWorkerMgr->m_pErrHandler != NULL)
+				poNetWorkerMgr->m_pErrHandler(poNetWorkerMgr->m_szErrMsg);
+		}
 	}
 }
 
