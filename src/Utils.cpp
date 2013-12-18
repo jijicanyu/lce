@@ -127,7 +127,9 @@ void initDaemon()
     pid_t pid;
     if ((pid = fork()) != 0)
         exit(0);
+
     setsid();
+
     signal(SIGINT,  SIG_IGN);
     signal(SIGHUP,  SIG_IGN);
     signal(SIGQUIT, SIG_IGN);
@@ -138,16 +140,16 @@ void initDaemon()
     signal(SIGTERM, SIG_IGN);
     signal(SIGIO,   SIG_IGN);
 
+	//防止向异常的fd写数据，产生sigpipe信号使程序退出
 	struct sigaction sig;
 	sig.sa_handler = SIG_IGN;
 	sig.sa_flags = 0;
 	sigemptyset(&sig.sa_mask);
-	//防止向异常的fd写数据，产生sigpipe信号使程序退出
 	sigaction(SIGPIPE,&sig,NULL);
+
 
     if ((pid = fork()) != 0) //1次fork脱离控制终端，2次防止自己创建控制终端
         exit(0);
-    umask(0);
 }
 
 bool setFileLimit(const size_t dwLimit)

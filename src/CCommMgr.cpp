@@ -498,7 +498,13 @@ void CCommMgr::onAccept(int iFd,void *pData)
 
 		if( CCommMgr::getInstance().isClose(iClientSock) ) continue;
 
-		CCommMgr::getInstance().m_oCEvent.addFdEvent(iClientSock,CEvent::EV_READ,CCommMgr::onTcpRead,pstClientInfo);
+		if(CCommMgr::getInstance().m_oCEvent.addFdEvent(iClientSock,CEvent::EV_READ,CCommMgr::onTcpRead,pstClientInfo) != 0)
+		{
+			if (pstServerInfo->pProcessor != NULL)
+				pstServerInfo->pProcessor->onError(stSession,CCommMgr::getInstance().m_oCEvent.getErrorMsg(),ERR_SOCKET);
+			lce::close(iClientSock);
+			continue;
+		}
 	}
 
 }
@@ -531,8 +537,15 @@ void CCommMgr::onConnect(int iFd,void *pData)
 	{
 		if (pstServerInfo->pProcessor != NULL)
 			pstServerInfo->pProcessor->onConnect(stSession,true,pData);
+
 		if(!CCommMgr::getInstance().isClose(iFd))
-			CCommMgr::getInstance().m_oCEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_READ,CCommMgr::onTcpRead,pstClientInfo);
+		{
+			if(CCommMgr::getInstance().m_oCEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_READ,CCommMgr::onTcpRead,pstClientInfo) != 0)
+			{
+				if (pstServerInfo->pProcessor != NULL)
+					pstServerInfo->pProcessor->onError(stSession,CCommMgr::getInstance().m_oCEvent.getErrorMsg(),ERR_SOCKET);
+			}
+		}
 	}
 	else
 	{
@@ -575,12 +588,18 @@ int CCommMgr::write(const SSession &stSession,const char* pszData, const int iSi
                 {
                     pstClientInfo->pSocketSendBuf=new CSocketBuf(pstServerInfo->dwInitSendBufLen,pstServerInfo->dwMaxSendBufLen);
                 }
+
                 if(!pstClientInfo->pSocketSendBuf->addData(pszData+iSendSize,iSize-iSendSize))
 				{
 					snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,write error buffer less than data",__FILE__,__LINE__);
 					return -1;
 				}
-                m_oCEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CCommMgr::onWrite,pstClientInfo);
+
+				if(m_oCEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CCommMgr::onWrite,pstClientInfo) != 0)
+				{
+					snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s",m_oCEvent.getErrorMsg());
+					return -1;
+				}
             }
             else
             {
@@ -602,12 +621,18 @@ int CCommMgr::write(const SSession &stSession,const char* pszData, const int iSi
                 {
                     pstClientInfo->pSocketSendBuf=new CSocketBuf(pstServerInfo->dwInitSendBufLen,pstServerInfo->dwMaxSendBufLen);
                 }
+
                 if(!pstClientInfo->pSocketSendBuf->addData(pszData,iSize))
 				{
 					snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,write error buffer less than data",__FILE__,__LINE__);
 					return -1;
 				}
-                m_oCEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CCommMgr::onWrite,pstClientInfo);
+
+                if(m_oCEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CCommMgr::onWrite,pstClientInfo) != 0)
+				{
+					snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s",m_oCEvent.getErrorMsg());
+					return -1;
+				}
             }
             else
             {
@@ -645,7 +670,11 @@ int CCommMgr::write(const SSession &stSession,const char* pszData, const int iSi
 				return -1;
 			}
 
-            m_oCEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CCommMgr::onWrite,pstClientInfo);
+			if(m_oCEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CCommMgr::onWrite,pstClientInfo) != 0)
+			{
+				snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s",m_oCEvent.getErrorMsg());
+				return -1;
+			}
         }
         else
         {
@@ -659,7 +688,12 @@ int CCommMgr::write(const SSession &stSession,const char* pszData, const int iSi
 						snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,write error buffer less than data",__FILE__,__LINE__);
 						return -1;
 					}
-                    m_oCEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CCommMgr::onWrite,pstClientInfo);
+
+					if(m_oCEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CCommMgr::onWrite,pstClientInfo) != 0)
+					{
+						snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s",m_oCEvent.getErrorMsg());
+						return -1;
+					}
                 }
                 else
                 {
@@ -683,7 +717,11 @@ int CCommMgr::write(const SSession &stSession,const char* pszData, const int iSi
 						return -1;
 					}
 
-                    m_oCEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CCommMgr::onWrite,pstClientInfo);
+					if(m_oCEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CCommMgr::onWrite,pstClientInfo) != 0)
+					{
+						snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s",m_oCEvent.getErrorMsg());
+						return -1;
+					}
                 }
                 else
                 {
@@ -974,7 +1012,7 @@ void CCommMgr::onSignal(int iSignal)
 	}
 }
 
-int CCommMgr::sendMessage(int dwMsgType,CProcessor *pProcessor,void* pData)
+int CCommMgr::sendMessage(int iMsgType,CProcessor *pProcessor,void* pData)
 {
 	if(pProcessor == NULL)
 	{
@@ -987,15 +1025,15 @@ int CCommMgr::sendMessage(int dwMsgType,CProcessor *pProcessor,void* pData)
 	pstProcessor->pProcessor=pProcessor;
 
 
-	return m_oCEvent.addMessage(dwMsgType,CCommMgr::onMessage,pstProcessor);
+	return m_oCEvent.addMessage(iMsgType,CCommMgr::onMessage,pstProcessor);
 
 }
-void CCommMgr::onMessage(int dwMsgType,void *pData)
+void CCommMgr::onMessage(int iMsgType,void *pData)
 {
 	if (pData == NULL)
 		return;
 	SProcessor *pstProcessor =(SProcessor*)pData;
-	pstProcessor->pProcessor->onMessage(dwMsgType,pstProcessor->pData);
+	pstProcessor->pProcessor->onMessage(iMsgType,pstProcessor->pData);
 
 	delete pstProcessor;
 	pstProcessor = NULL;
