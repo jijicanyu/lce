@@ -6,7 +6,6 @@ namespace lce
     {
         m_iThreadNum=iThreadNum;
         m_iMaxSize=iMaxSize;
-
         pthread_mutex_init (&m_lock, 0);
         pthread_cond_init (&m_cond, 0);
 

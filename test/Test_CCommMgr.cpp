@@ -66,25 +66,25 @@ public:
 		cout<<sfilename2<<endl;
 		*/	
 		
-		
+		/*
         pstRequest->oResponse.begin();
         pstRequest->oResponse.setStatusCode(200);
         pstRequest->oResponse<<"Hello world";
         pstRequest->oResponse.end();
         CCommMgr::getInstance().write(pstRequest->stSession,pstRequest->oResponse.data(),pstRequest->oResponse.size(),true);
         delete pstRequest;
-		
+		*/
 		
 
 		
 		//cout<<"onRead" <<endl;
 	
-		/*
+		
         if(CProCenter::getInstance().dispatch(100,pstRequest)< 0)
 		{
 			cout<<CProCenter::getInstance().getErrMsg()<<endl;
 		}
-		*/
+		
     }
 
 

@@ -138,7 +138,7 @@ public:
         }
 		m_dwMaxClient = dwMaxClient;
 		m_dwClientNum = 0;
-        m_vecClients.resize(dwMaxClient * MAGIC_FD_TIMES,0);
+        m_vecClients.resize(dwMaxClient * MAGIC_FD_TIMES);
         return 0;
     }
 
@@ -206,7 +206,7 @@ private:
 
 private:
     vector <SServerInfo *> m_vecServers;
-    vector <SClientInfo *> m_vecClients;
+    vector <SClientInfo> m_vecClients;
 	MAP_TIMER_PROC m_mapTimeProcs;
 	map<int,CProcessor*> m_mapSigProcs;
     CEvent m_oCEvent;

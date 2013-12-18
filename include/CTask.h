@@ -83,7 +83,7 @@ public:
 
     friend class CTaskThread;
     ~CTask();
-    int init(int iThreadNum,int iTimeOut);
+    int init(int iThreadNum,int iMaxSize);
     int run();
     int stop();
     int dispatch(int iTaskType,void *pData);
