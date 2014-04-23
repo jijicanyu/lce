@@ -9,25 +9,25 @@ MAX_ITEM_COUNT = 100000
 MAX_KEY_LEN = 255
 
 def anyvalue_decode(s):
-	arr = array.array('B')
-	arr.fromstring(s)
-	return _anyvalue_decode_arry(arr)
+	buffer = array.array('B')
+	buffer.fromstring(s)
+	return _anyvalue_decode_arry(buffer)
 
 def anyvalue_encode(obj):
-	arr = _anyvalue_encode_array(obj)
-	return arr.tostring()
 
-def _anyvalue_encode_array(obj):
+	buffer = array.array('B')
+	_anyvalue_encode_array(obj,buffer)
+	return buffer.tostring()
 
-	arr_out = array.array('B')
+def _anyvalue_encode_array(obj,buffer):
+
 	t = type(obj)
 	if t==types.DictType:
-		_encode_dict(arr_out, obj)
+		_encode_dict(buffer, obj)
 	elif t==types.ListType or t==types.TupleType:
-		_encode_list(arr_out, obj)
+		_encode_list(buffer, obj)
 	else:
 		raise exceptions.TypeError,obj
-	return arr_out
 
 
 def _anyvalue_decode_arry(in_arr):
@@ -41,14 +41,14 @@ def _anyvalue_decode_arry(in_arr):
 		raise exceptions.ValueError,'decode error:len=%d, too short' % end_index
 	if in_arr[start_index]==0x08:  #map
 		start_index += 1
-		dict = {}
-		_decode_dict(in_arr, start_index, end_index, dict)
-		return dict
+		value = {}
+		_decode_dict(in_arr, start_index, end_index, value)
+		return value
 	elif in_arr[start_index]==0x07:  #array
 		start_index += 1
-		temp_list = []
-		_decode_list(in_arr, start_index, end_index, temp_list)
-		return temp_list
+		value = []
+		_decode_list(in_arr, start_index, end_index, value)
+		return value
 	else:
 		raise exceptions.ValueError,'decode error at index %d' % start_index
 	return None
@@ -102,7 +102,7 @@ def _decode_normal_type(in_arr, start_index, end_index):
 	elif 10 == value_type:
 		if end_index-start_index < 8:
 			raise exceptions.ValueError, 'decode error at index %d:reach to end' % 	(start_index)
-		(float_value,) = struct.unpack('@d', in_arr[start_index:start_index+8].tostring())
+		(float_value,) = struct.unpack('!d', in_arr[start_index:start_index+8].tostring())
 		return (float_value, start_index+8)
 
 	elif 11 == value_type:
@@ -258,7 +258,7 @@ def _encode_normal_type(arr_out, value):
 
 	elif item_type==types.FloatType:
 		arr_out.append(10)
-		arr_out.fromstring(struct.pack('@d', value))
+		arr_out.fromstring(struct.pack('!d', value))
 
 	elif item_type==types.StringType or item_type==types.UnicodeType:
 		if item_type==types.UnicodeType:
@@ -345,10 +345,10 @@ def main():
 	obj1 = {}
 	obj1 = anyvalue_decode(data1)
 
+	print obj1
+
 	data2 = anyvalue_encode(obj1)
 	f2.write(data2)
-
-	print obj1
 
 	obj2 = {}
 	obj2 = anyvalue_decode(data2)

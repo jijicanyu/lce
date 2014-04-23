@@ -5,6 +5,9 @@
 #include <vector>
 #include <iostream>
 #include <stdexcept>
+#include <tr1/memory>
+#include <tr1/functional>
+#include <sys/eventfd.h>
 #include "Utils.h"
 #include "CSocketBuf.h"
 #include "CPackageFilter.h"
@@ -14,6 +17,7 @@
 #include "CRawPackageFilter.h"
 #include "CEvent.h"
 #include "CThread.h"
+#include "CCircleQueue.h"
 
 using namespace std;
 
@@ -47,6 +51,7 @@ namespace lce
 		ERR_NOT_READY = 5,
 		ERR_SYSTEM = 6,
 		ERR_PKG_FILTER = 7,
+		ERR_OP_EVENT = 8,
 	};
 
 	struct SSession
@@ -101,7 +106,6 @@ namespace lce
 		SClientInfo(){ memset(this,0,sizeof(SClientInfo));}
 		int iFd;
 		bool bNeedClose;
-		void *pData;
 		uint64_t ddwBeginTime;
 		SServerInfo *pstServerInfo;
  		CSocketBuf *pSocketRecvBuf;
@@ -116,17 +120,14 @@ namespace lce
 
 	class CNetWorker :public CThread
 	{
-	private:
-
-		struct SProcessor
-		{
-			void * pData;
-		};
-
-		typedef tr1::unordered_map <int,SProcessor> MAP_TIMER_PROC;
-
+		
 
 	public:
+
+		CNetWorker()
+		{
+			m_iEventFd = 0;
+		}
 
 		int init(uint32_t dwMaxClient);
 
@@ -149,6 +150,10 @@ namespace lce
 			throw std::runtime_error("not implement onTimer");
 		}
 
+		virtual void onMessage(int iMsgType,void *pData){ 
+			throw std::runtime_error("not implement onMessage");
+		}
+
 		int watch(int iFd,void *pData);
 		int close(const SSession &stSession);
 		int write(const SSession &stSession,const char* pszData, const int iSize,bool bClose = true);
@@ -159,6 +164,8 @@ namespace lce
 
 		int addTimer(int iTimerId,uint32_t dwExpire,void *pData = NULL);
 		int delTimer(int iTimerId);
+
+		int sendMessage(int iMsgType,void* pData = NULL);
 
 		const char * getErrMsg(){ return m_szErrMsg;}
 
@@ -172,10 +179,10 @@ namespace lce
 		int close(int iFd);
 		int write(int iFd);
 
-		static void onWrite(int iFd,void *pData);
-		static void onTcpRead(int iFd,void *pData);
-		static void onConnect(int iFd,void *pData);
-		static void onTimerProc(int iTimerId,void *pData);
+		void onWrite(int iFd,void *pData);
+		void onTcpRead(int iFd,void *pData);
+		void onTcpConnect(int iFd,void *pData);
+		void onEvent(int iFd,void *pData);
 
 	protected:
 		char m_szErrMsg[1024];
@@ -183,8 +190,8 @@ namespace lce
 		CEvent m_oEvent;
 		vector <SClientInfo *> m_vecClients;
 		map <uint32_t,SServerInfo *> m_mapServers;
-		MAP_TIMER_PROC m_mapTimeProcs;
-		
+		CCircleQueue<SClientInfo*> m_queConn;
+		int m_iEventFd;
 
 	};
 };

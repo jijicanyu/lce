@@ -142,7 +142,7 @@ int main(int argc,char *argv[])
 	string sData3;
 	string sData4;
     oValue.encodeJSON(sData);
-	cout<<"json="<<sData<<endl;
+	cout<<"json1="<<sData<<endl;
 	oValue.clear();
 	oValue.decodeJSON(sData.data(),sData.size());
 
@@ -151,7 +151,7 @@ int main(int argc,char *argv[])
     oValue.encodeJSON(sData3);
 
 
-	cout<<"json="<<sData3<<endl;
+	cout<<"json2="<<sData3<<endl;
 
 	oValue.encode(sData2);
 	oValue.clear();
@@ -162,7 +162,7 @@ int main(int argc,char *argv[])
 
 
 	oValue.encodeJSON(sData4);
-    cout<< sData4<<endl;
+    cout<<"json3="<< sData4<<endl;
 
 	oValue.clear();
 

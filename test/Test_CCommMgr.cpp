@@ -74,9 +74,7 @@ public:
         CCommMgr::getInstance().write(pstRequest->stSession,pstRequest->oResponse.data(),pstRequest->oResponse.size(),true);
         delete pstRequest;
 		*/
-		
-
-		
+				
 		//cout<<"onRead" <<endl;
 	
 		

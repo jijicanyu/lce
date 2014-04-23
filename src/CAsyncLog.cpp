@@ -3,7 +3,6 @@
 namespace lce
 {
 
-
 CAsyncLog::~CAsyncLog()
 {
 	if (m_ofsOutFile.is_open())

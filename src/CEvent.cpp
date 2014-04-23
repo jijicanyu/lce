@@ -103,7 +103,6 @@ int CEvent::addFdEvent ( int iWatchFd, int iEventType, const HandlerEvent &onEve
         return -1;
     }
 
-
     struct epoll_event stEvent;
 
     stEvent.events = 0;

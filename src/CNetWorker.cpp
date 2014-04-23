@@ -3,7 +3,7 @@
 namespace lce
 {
 
-int CNetWorker::init(uint32_t dwMaxClient /* = 10000 */)
+int CNetWorker::init(uint32_t dwMaxClient )
 {
 	m_vecClients.resize(dwMaxClient*FD_TIMES,0);
 
@@ -11,6 +11,23 @@ int CNetWorker::init(uint32_t dwMaxClient /* = 10000 */)
 	{
 		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,strerror(errno));
 		return -1;
+	}
+
+	m_queConn.init(dwMaxClient);
+
+	m_iEventFd = eventfd(0, EFD_NONBLOCK);
+
+	if(m_iEventFd == -1)
+	{
+		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,init worker errno:%d error:%s",__FILE__,__LINE__,errno,strerror(errno));
+		return -1;
+	}
+
+
+	if (m_oEvent.addFdEvent(m_iEventFd,CEvent::EV_READ,tr1::bind(&CNetWorker::onEvent,this,std::tr1::placeholders::_1,  std::tr1::placeholders::_2),NULL) != 0)
+	{
+		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,init worker error:%s",__FILE__,__LINE__,m_oEvent.getErrorMsg());
+		return -1;	
 	}
 
 	if( init() < 0)
@@ -116,7 +133,6 @@ int CNetWorker::connect(int iSrvId,const string &sIp,uint16_t wPort,void *pData)
 		pstClientInfo->iFd=lce::createTcpSock();
 		pstClientInfo->pstServerInfo = pstServerInfo;
 		pstClientInfo->ddwBeginTime = lce::getTickCount();
-		pstClientInfo->pData = pData;
 
 		if (pstClientInfo->iFd < 0)
 		{
@@ -159,7 +175,7 @@ int CNetWorker::connect(int iSrvId,const string &sIp,uint16_t wPort,void *pData)
 
 			if (errno == EINPROGRESS)
 			{
-				if(m_oEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_WRITE,CNetWorker::onConnect,this) != 0)
+				if(m_oEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_WRITE,tr1::bind(&CNetWorker::onTcpConnect,this,std::tr1::placeholders::_1,  std::tr1::placeholders::_2),pData) != 0)
 				{
 					lce::close(pstClientInfo->iFd);
 					delete pstClientInfo;
@@ -188,19 +204,17 @@ int CNetWorker::connect(int iSrvId,const string &sIp,uint16_t wPort,void *pData)
 	return -1;
 }
 
-void CNetWorker::onConnect(int iFd,void *pData)
+void CNetWorker::onTcpConnect(int iFd,void *pData)
 {
 
-	CNetWorker *poWorker = (CNetWorker*)pData;
-
-	if(poWorker->isClose(iFd))
+	if(isClose(iFd))
 	{
 		return;
 	}
 
-	SClientInfo *pstClientInfo = poWorker->m_vecClients[iFd];
+	SClientInfo *pstClientInfo = m_vecClients[iFd];
 
-	poWorker->m_oEvent.delFdEvent(iFd,CEvent::EV_WRITE);
+	m_oEvent.delFdEvent(iFd,CEvent::EV_WRITE);
 
 	SServerInfo * pstServerInfo = pstClientInfo->pstServerInfo;
 
@@ -217,44 +231,87 @@ void CNetWorker::onConnect(int iFd,void *pData)
 
 	if(error == 0)
 	{
-		poWorker->onConnect(stSession,true,pstClientInfo->pData);
+		onConnect(stSession,true,pData);
 		
-		if(!poWorker->isClose(iFd))
+		if(!isClose(iFd))
 		{
-			pstClientInfo->pData = poWorker;
-			if(poWorker->m_oEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_READ,CNetWorker::onTcpRead,pstClientInfo) != 0)
+
+			if(m_oEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_READ,tr1::bind(&CNetWorker::onTcpRead,this,std::tr1::placeholders::_1,  std::tr1::placeholders::_2),pstClientInfo) != 0)
 			{
-				poWorker->close(iFd);
-				snprintf(poWorker->m_szErrMsg,sizeof(poWorker->m_szErrMsg),"%s",poWorker->m_oEvent.getErrorMsg());
-				poWorker->onError(stSession,poWorker->m_szErrMsg,ERR_NO_BUFFER);
+				close(iFd);
+				snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s",m_oEvent.getErrorMsg());
+				onError(stSession,m_szErrMsg,ERR_OP_EVENT);
 			}
 		}
 	}
 	else
 	{
-		poWorker->onConnect(stSession,false,pstClientInfo->pData);
-		poWorker->close(iFd);
+		onConnect(stSession,false,pData);
+		close(iFd);
 	}
 }
 
 int CNetWorker::run()
 {
 	return m_oEvent.run();
+
 }
 
 int CNetWorker::watch(int iFd,void *pData)
 {
-	return m_oEvent.addFdEvent(iFd,CEvent::EV_READ,CNetWorker::onTcpRead,pData);
+	SClientInfo *pstClientInfo = (SClientInfo*)pData;
+	
+	if(!m_queConn.enque(pstClientInfo))
+	{
+		return -1;
+	}
+
+	uint64_t ddwNum = 1;
+	int size = ::write(m_iEventFd, &ddwNum, sizeof(uint64_t));
+
+	return 0;
 }
 
+
+void CNetWorker::onEvent(int iFd,void *pData)
+{
+	uint64_t ddwNum = 0;
+	int size = ::read(m_iEventFd, &ddwNum, sizeof(uint64_t));
+	
+	while(!m_queConn.empty())
+	{
+		SClientInfo * pstClientInfo = NULL;
+		m_queConn.deque(pstClientInfo);
+
+		if(pstClientInfo != NULL)
+		{
+			m_vecClients[pstClientInfo->iFd] = pstClientInfo;
+
+			SSession stSession;
+			stSession.ddwBeginTime = pstClientInfo->ddwBeginTime;
+			stSession.iFd = iFd;
+			stSession.iSvrId = pstClientInfo->pstServerInfo->iSrvId;
+			stSession.stClientAddr = pstClientInfo->stClientAddr;
+
+			onConnect(stSession,true,pstClientInfo);
+
+			if (isClose(pstClientInfo->iFd)) continue;
+
+			if(m_oEvent.addFdEvent(pstClientInfo->iFd,CEvent::EV_READ,tr1::bind(&CNetWorker::onTcpRead,this,std::tr1::placeholders::_1,  std::tr1::placeholders::_2),pstClientInfo) != 0)
+			{
+				close(iFd);
+				snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s",m_oEvent.getErrorMsg());
+				onError(stSession,m_szErrMsg,ERR_OP_EVENT);	
+			}
+		}
+	}
+
+}
 
 void CNetWorker::onTcpRead(int iFd,void *pData)
 {
 
-	SClientInfo *pstClientInfo = (SClientInfo*)pData;
-	CNetWorker *poWorker = (CNetWorker*)pstClientInfo->pData;
-
-	poWorker->m_vecClients[iFd] = pstClientInfo;
+	SClientInfo *pstClientInfo = m_vecClients[iFd];
 
 	SSession stSession;
 	stSession.ddwBeginTime = pstClientInfo->ddwBeginTime;
@@ -277,9 +334,9 @@ void CNetWorker::onTcpRead(int iFd,void *pData)
 	if(pstClientInfo->pSocketRecvBuf->getFreeSize() == 0)
 	{
 		//print error no buf size
-		poWorker->close(iFd);
-		snprintf(poWorker->m_szErrMsg,sizeof(poWorker->m_szErrMsg),"onTcpRead %s,%d,socket buf no memory",__FILE__,__LINE__);
-		poWorker->onError(stSession,poWorker->m_szErrMsg,ERR_NO_BUFFER);
+		close(iFd);
+		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"onTcpRead %s,%d,socket buf no memory",__FILE__,__LINE__);
+		onError(stSession,m_szErrMsg,ERR_NO_BUFFER);
 		return;
 
 	}
@@ -297,49 +354,48 @@ void CNetWorker::onTcpRead(int iFd,void *pData)
 
 		if(pstClientInfo->pstServerInfo->pPackageFilter == NULL)
 		{
-			poWorker->close(iFd);
-			snprintf(poWorker->m_szErrMsg,sizeof(poWorker->m_szErrMsg),"onTcpRead %s,%d,package filter is null",__FILE__,__LINE__);
-			poWorker->onError(stSession,poWorker->m_szErrMsg,ERR_PKG_FILTER);
+			close(iFd);
+			snprintf(m_szErrMsg,sizeof(m_szErrMsg),"onTcpRead %s,%d,package filter is null",__FILE__,__LINE__);
+			onError(stSession,m_szErrMsg,ERR_PKG_FILTER);
 			return;
 		}
 
 		while ((iWholePkgFlag = pstClientInfo->pstServerInfo->pPackageFilter->isWholePkg(pstClientInfo->pSocketRecvBuf->getData(), pstClientInfo->pSocketRecvBuf->getSize(), iRealPkgLen, iPkgLen)) == 0 )
 		{
-			poWorker->onRead(stSession,pstClientInfo->pSocketRecvBuf->getData(),iPkgLen);
-			if(poWorker->isClose(iFd))
+			onRead(stSession,pstClientInfo->pSocketRecvBuf->getData(),iPkgLen);
+			if(isClose(iFd))
 				break;
 			pstClientInfo->pSocketRecvBuf->removeData(iPkgLen);
 		}
 		if ( -2 == iWholePkgFlag )//非法数据包
 		{
-			//CCommMgr::getInstance().close(iFd);//非法数据包时，不关闭连接，而是重置接收缓冲区，是否关闭连接让上层处理
-			pstClientInfo->pSocketRecvBuf->reset();
-			snprintf(poWorker->m_szErrMsg,sizeof(poWorker->m_szErrMsg),"onTcpRead %s,%d,package invalid",__FILE__,__LINE__);
-			poWorker->onError(stSession,poWorker->m_szErrMsg,ERR_INVALID_PACKAGE);
+			close(iFd);//非法数据包时，关闭连接
+			snprintf(m_szErrMsg,sizeof(m_szErrMsg),"onTcpRead %s,%d,package invalid",__FILE__,__LINE__);
+			onError(stSession,m_szErrMsg,ERR_INVALID_PACKAGE);
 		}
 	}
 	else if(iSize == 0)
 	{
-		poWorker->onClose(stSession);
-		poWorker->close(iFd);
+		onClose(stSession);
+		close(iFd);
 	}
 	else
 	{
 		if( errno == 104) //Connection reset by peer
 		{
-			poWorker->onClose(stSession);
-			poWorker->close(iFd);
+			onClose(stSession);
+			close(iFd);
 		}
 		else if(errno == EAGAIN || errno == EINTR) //处理连接正常，IO不正常情况，不关闭连接
 		{
-			snprintf(poWorker->m_szErrMsg,sizeof(poWorker->m_szErrMsg),"onTcpRead EAGAIN or EINTR %s,%d,errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
-			poWorker->onError(stSession,poWorker->m_szErrMsg,ERR_NOT_READY);
+			snprintf(m_szErrMsg,sizeof(m_szErrMsg),"onTcpRead EAGAIN or EINTR %s,%d,errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
+			onError(stSession,m_szErrMsg,ERR_NOT_READY);
 		}
 		else
 		{
-			snprintf(poWorker->m_szErrMsg,sizeof(poWorker->m_szErrMsg),"onTcpRead %s,%d,errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
-			poWorker->close(iFd);
-			poWorker->onError(stSession,poWorker->m_szErrMsg,ERR_SOCKET);
+			snprintf(m_szErrMsg,sizeof(m_szErrMsg),"onTcpRead %s,%d,errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
+			close(iFd);
+			onError(stSession,m_szErrMsg,ERR_SOCKET);
 		}
 	}
 }
@@ -396,7 +452,7 @@ int CNetWorker::write(const SSession &stSession,const char* pszData, const int i
 					snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,write error buffer less than data",__FILE__,__LINE__);
 					return -1;
 				}
-				if(m_oEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CNetWorker::onWrite,this) !=0)
+				if(m_oEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,tr1::bind(&CNetWorker::onWrite,this,std::tr1::placeholders::_1,  std::tr1::placeholders::_2),pstClientInfo) !=0)
 				{
 					snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s",m_oEvent.getErrorMsg());
 					return -1;
@@ -427,7 +483,7 @@ int CNetWorker::write(const SSession &stSession,const char* pszData, const int i
 					snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,write error buffer less than data",__FILE__,__LINE__);
 					return -1;
 				}
-				if(m_oEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CNetWorker::onWrite,this) != 0)
+				if(m_oEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,tr1::bind(&CNetWorker::onWrite,this,std::tr1::placeholders::_1,  std::tr1::placeholders::_2),pstClientInfo) != 0)
 				{
 					snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s",m_oEvent.getErrorMsg());
 					return -1;
@@ -467,7 +523,7 @@ int CNetWorker::write(const SSession &stSession,const char* pszData, const int i
 				return -1;
 			}
 
-			if(m_oEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CNetWorker::onWrite,this) !=0)
+			if(m_oEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,tr1::bind(&CNetWorker::onWrite,this,std::tr1::placeholders::_1,  std::tr1::placeholders::_2),pstClientInfo) !=0)
 			{
 				snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s",m_oEvent.getErrorMsg());
 				return -1;
@@ -486,7 +542,7 @@ int CNetWorker::write(const SSession &stSession,const char* pszData, const int i
 						return -1;
 					}
 
-					if(m_oEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CNetWorker::onWrite,this) != 0)
+					if(m_oEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,tr1::bind(&CNetWorker::onWrite,this,std::tr1::placeholders::_1,  std::tr1::placeholders::_2),pstClientInfo) != 0)
 					{
 						snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s",m_oEvent.getErrorMsg());
 						return -1;
@@ -514,7 +570,7 @@ int CNetWorker::write(const SSession &stSession,const char* pszData, const int i
 						return -1;
 					}
 
-					if(m_oEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,CNetWorker::onWrite,this) != 0)
+					if(m_oEvent.addFdEvent(stSession.iFd,CEvent::EV_WRITE,tr1::bind(&CNetWorker::onWrite,this,std::tr1::placeholders::_1,  std::tr1::placeholders::_2),pstClientInfo) != 0)
 					{
 						snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s",m_oEvent.getErrorMsg());
 						return -1;
@@ -580,42 +636,28 @@ int CNetWorker::write(int iFd)
 void CNetWorker::onWrite(int iFd,void *pData)
 {
 
-	CNetWorker *poWorker = (CNetWorker*)pData;
-
-	if(poWorker->isClose(iFd))
+	if(isClose(iFd))
 	{
 		return;
 	}
-	poWorker->write(iFd);
+	write(iFd);
 }
 
 
 int CNetWorker::addTimer(int iTimerId,uint32_t dwExpire,void *pData)
 {	
-	m_mapTimeProcs[iTimerId].pData = pData;
-	return m_oEvent.addTimer(iTimerId,dwExpire,CNetWorker::onTimerProc,this);
+	return m_oEvent.addTimer(iTimerId,dwExpire,tr1::bind(&CNetWorker::onTimer,this,std::tr1::placeholders::_1,  std::tr1::placeholders::_2),pData);
 }
 
 int CNetWorker::delTimer(int iTimerId)
 {
-	m_mapTimeProcs.erase(iTimerId);
 	return m_oEvent.delTimer(iTimerId);
 }
 
-void CNetWorker::onTimerProc(int iTimerId,void *pData)
+
+int CNetWorker::sendMessage(int iMsgType,void* pData /* = NULL */)
 {
-	CNetWorker *poWorker = (CNetWorker*)pData;
-
-	MAP_TIMER_PROC::iterator it = poWorker->m_mapTimeProcs.find(iTimerId);
-
-	if(it != poWorker->m_mapTimeProcs.end())
-	{
-		void *pClientData = it->second.pData;
-		poWorker->m_mapTimeProcs.erase(iTimerId);
-
-		poWorker->onTimer(iTimerId,pClientData);
-	}
-
+	return m_oEvent.addMessage(iMsgType,tr1::bind(&CNetWorker::onMessage,this,std::tr1::placeholders::_1,  std::tr1::placeholders::_2),pData);
 }
 
 

@@ -1426,11 +1426,12 @@ private:
     static void decode_float(size_t& dwDecodePos, const char* pData, const size_t dwDataSize, this_type& thisobj)
     {
 
-        thisobj.m_ucType = DType::Float;
-        check(dwDecodePos+8, dwDataSize);
-		
-		thisobj.m_value.flValue = (*(double*)(pData+dwDecodePos));
-		dwDecodePos+=8;
+		thisobj.m_ucType = DType::Float;
+		check(dwDecodePos+8, dwDataSize);
+		uint64_t ui64Tmp = ntohll(*(uint64_t*)(pData+dwDecodePos));
+		thisobj.m_value.flValue =*(double*)&ui64Tmp; 
+		dwDecodePos += 8;
+
     }
 
     static inline std::string unicodeToUTF8(unsigned int cp)
@@ -1961,10 +1962,10 @@ private:
 
     static void encode_float(std::string& sBuf, const ValueHolder& value)
     {
-
         sBuf.push_back((char)DType::Float);
-		double flValue = value.flValue;
-        sBuf.append(reinterpret_cast<char*>(&flValue),sizeof(double));
+		uint64_t ui64Tmp = *(uint64_t*)&value.flValue; 
+		uint64_t ui64Tmp2 = htonll(ui64Tmp);
+		sBuf.append(reinterpret_cast<char*>(&ui64Tmp2),sizeof(ui64Tmp2));
     }
 
 

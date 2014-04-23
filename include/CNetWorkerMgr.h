@@ -56,17 +56,8 @@ public:
 
 private:
 
-    static void onAccept(int iFd,void *pData);
+    void onAccept(int iFd,void *pData);
 
-	SServerInfo * getServerInfoByFd(int iFd)
-	{
-		for(int i=0;i<m_vecServers.size();i++)
-		{
-			if(m_vecServers[i]->iFd == iFd)
-				return m_vecServers[i];
-		}
-		return NULL;
-	}
 
 private:
 	NWMGR_ERROR_HANDLER m_pErrHandler;
@@ -180,7 +171,7 @@ int CNetWorkerMgr<T>::createSrv(const string &sIp,uint16_t wPort,int iPkgType,ui
 
 	}
 
-	if(m_oEvent.addFdEvent(pstServerInfo->iFd,CEvent::EV_READ,CNetWorkerMgr<T>::onAccept,this) < 0 )
+	if(m_oEvent.addFdEvent(pstServerInfo->iFd,CEvent::EV_READ,tr1::bind(&CNetWorkerMgr<T>::onAccept,this,std::tr1::placeholders::_1,  std::tr1::placeholders::_2),pstServerInfo) < 0 )
 	{
 		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"%s,%d,errno:%d,error:%s",__FILE__,__LINE__,errno,m_oEvent.getErrorMsg());
 		lce::close(iFd);
@@ -234,9 +225,7 @@ template<class T>
 void CNetWorkerMgr<T>::onAccept(int iFd,void *pData)
 {
 
-	CNetWorkerMgr<T> *poNetWorkerMgr = (CNetWorkerMgr<T> *)pData;
-
-	SServerInfo *pstServerInfo = poNetWorkerMgr->getServerInfoByFd(iFd);
+	SServerInfo *pstServerInfo = (SServerInfo*)pData;
 
 	while(true) //循环接受请求，减小epoll软中断次数，提高性能
 	{
@@ -250,27 +239,27 @@ void CNetWorkerMgr<T>::onAccept(int iFd,void *pData)
 		{
 			if(errno != EAGAIN && errno != EINTR) //Resource temporarily unavailable
 			{
-				snprintf(poNetWorkerMgr->m_szErrMsg,sizeof(poNetWorkerMgr->m_szErrMsg),"onAccept %s,%d,accept errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
+				snprintf(m_szErrMsg,sizeof(m_szErrMsg),"onAccept %s,%d,accept errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
 				
-				if(poNetWorkerMgr->m_pErrHandler != NULL)
-					poNetWorkerMgr->m_pErrHandler(poNetWorkerMgr->m_szErrMsg);
+				if(m_pErrHandler != NULL)
+					m_pErrHandler(m_szErrMsg);
 			}
 			break;
 		}
 
 		
-		if(iClientSock > poNetWorkerMgr->m_dwMaxClient)
+		if(iClientSock > m_dwMaxClient)
 		{
-			snprintf(poNetWorkerMgr->m_szErrMsg,sizeof(poNetWorkerMgr->m_szErrMsg),"onAccept %s,%d,max clients errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
-			if(poNetWorkerMgr->m_pErrHandler != NULL)
-				poNetWorkerMgr->m_pErrHandler(poNetWorkerMgr->m_szErrMsg);
+			snprintf(m_szErrMsg,sizeof(m_szErrMsg),"onAccept %s,%d,max clients errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
+			if(m_pErrHandler != NULL)
+				m_pErrHandler(m_szErrMsg);
 
 			lce::close(iClientSock);
 			continue;
 		}
 		
 
-		poNetWorkerMgr->m_dwClientNum++;
+		m_dwClientNum++;
 		lce::setReUseAddr(iClientSock);
 		lce::setNBlock(iClientSock);
 
@@ -279,16 +268,15 @@ void CNetWorkerMgr<T>::onAccept(int iFd,void *pData)
 		pstClientInfo->stClientAddr = stClientAddr;
 		pstClientInfo->pstServerInfo = pstServerInfo;
 		pstClientInfo->ddwBeginTime = lce::getTickCount();
-		int iIndex = poNetWorkerMgr->m_dwClientNum % poNetWorkerMgr->m_vecWorkers.size();
-		pstClientInfo->pData = poNetWorkerMgr->m_vecWorkers[iIndex];
+		int iIndex = m_dwClientNum % m_vecWorkers.size();
 
-		if(poNetWorkerMgr->m_vecWorkers[iIndex]->watch(iClientSock,pstClientInfo) != 0)
+		if(m_vecWorkers[iIndex]->watch(iClientSock,pstClientInfo) != 0)
 		{
 			lce::close(iClientSock);
 			delete pstClientInfo;
-			snprintf(poNetWorkerMgr->m_szErrMsg,sizeof(poNetWorkerMgr->m_szErrMsg),"onAccept %s,%d,add fd to event error errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
-			if(poNetWorkerMgr->m_pErrHandler != NULL)
-				poNetWorkerMgr->m_pErrHandler(poNetWorkerMgr->m_szErrMsg);
+			snprintf(m_szErrMsg,sizeof(m_szErrMsg),"onAccept %s,%d,add fd to event error errno=%d,msg=%s",__FILE__,__LINE__,errno,strerror(errno));
+			if(m_pErrHandler != NULL)
+				m_pErrHandler(m_szErrMsg);
 		}
 	}
 }
