@@ -25,7 +25,7 @@ class CAsyncLog:public CThread
 public:
 	~CAsyncLog(void);
 
-	bool init(const std::string& sLogFilePath="",int iLogSecs = 1,const unsigned long dwLogFileMaxSize=1000000,	const unsigned int uiLogFileNum=5,const bool bShowCmd=false);
+	bool init(const std::string& sLogFilePath="",int iLogSecs = 1,const unsigned long dwLogFileMaxSize=1024*1024*10,const unsigned int uiLogFileNum=5,const bool bShowCmd=false,const unsigned long dwBufSize=1024*1024);
 	bool write(const std::string& sMsg);
 	bool writeRaw(const std::string& sMsg);
 	bool write(const char *sFormat, ...);
@@ -64,7 +64,7 @@ private:
 		snprintf(szDate, sizeof(szDate), "%04d-%02d-%02d", curr.tm_year+1900, curr.tm_mon+1, curr.tm_mday);
 		return std::string(szDate);
 	}
-
+	void flush();
 	bool shiftFiles();
 	bool writeFile(const std::string& str, const bool bEnd=true);
 	bool writeFile(const char* data,size_t size,const bool bEnd=true);

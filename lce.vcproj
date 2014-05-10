@@ -202,6 +202,9 @@
 				RelativePath=".\include\CLog.h">
 			</File>
 			<File
+				RelativePath=".\include\CLogBuffer.h">
+			</File>
+			<File
 				RelativePath=".\include\CLruCache.h">
 			</File>
 			<File

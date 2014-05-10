@@ -35,6 +35,25 @@ namespace lce
 			m_iEventFd = 0;
 		}
 
+		virtual ~CNetWorker()
+		{
+			if(m_iEventFd > 0) ::close(m_iEventFd);
+
+			for(size_t i=0;i<m_vecClients.size();i++)
+			{
+				if(m_vecClients[i] != NULL) 
+				{
+					delete m_vecClients[i];
+				}
+			}
+
+			map<uint32_t,SServerInfo*>::iterator it = m_mapServers.begin();
+			for(;it != m_mapServers.end();++it)
+			{
+				delete it->second;
+			}
+
+		}
 		int init(uint32_t dwMaxClient);
 
 		virtual int init(){ return 0;};
