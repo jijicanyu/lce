@@ -163,6 +163,9 @@
 				RelativePath=".\include\CBitMap.h">
 			</File>
 			<File
+				RelativePath=".\include\CBQueue.h">
+			</File>
+			<File
 				RelativePath=".\include\CCircleQueue.h">
 			</File>
 			<File
@@ -268,6 +271,9 @@
 			</File>
 			<File
 				RelativePath=".\test\Test_CAnyValue.cpp">
+			</File>
+			<File
+				RelativePath=".\test\Test_CBQueue.cpp">
 			</File>
 			<File
 				RelativePath=".\test\Test_CCommMgr.cpp">
