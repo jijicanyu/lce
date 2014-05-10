@@ -1,5 +1,5 @@
 #ifndef __LCE_DEFINE_H__
-#define __LCE_DEFILE_H__
+#define __LCE_DEFINE_H__
 #include "CProcessor.h"
 
 

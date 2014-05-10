@@ -696,17 +696,14 @@ public:
         {
             throw Error("anyValue type error: no map type.");
         }
-        MapType::iterator it = m_value.map->find(sName);
-        if ( it == m_value.map->end() )
-        {
-            m_bHasData = true;
 
-            if ( sName.size() > 255 )
-                it = m_value.map->insert( MapType::value_type(sName.substr(0,255), CAnyValue()) ).first;
-            else
-                it = m_value.map->insert( MapType::value_type(sName, CAnyValue()) ).first;
-        }
-        return it->second;
+        m_bHasData = true;
+
+		if(sName.size() > 255)
+			return (*m_value.map)[sName.substr(0,255)];
+		else 
+			return (*m_value.map)[sName];
+
     }
 	
 	
@@ -718,16 +715,13 @@ public:
         {
             throw Error("anyValue type error: no map type.");
         }
-        MapType::iterator it = m_value.map->find(sName);
-        if ( it == m_value.map->end() )
-        {
-            m_bHasData = true;
-            if ( sName.size() > 255 )
-                it = m_value.map->insert( MapType::value_type(sName.substr(0,255), CAnyValue()) ).first;
-            else
-                it = m_value.map->insert( MapType::value_type(sName, CAnyValue()) ).first;
-        }
-        return it->second;
+
+		m_bHasData = true;
+
+		if(sName.size() > 255)
+			return (*m_value.map)[sName.substr(0,255)];
+		else 
+			return (*m_value.map)[sName];
     }
 	
     bool hasKey(const std::string& sName) const
@@ -1386,8 +1380,7 @@ private:
         while ( dwSize > 0 )
         {
             --dwSize;
-            CAnyValue value;
-			thisobj.m_value.vec->push_back(value);
+			thisobj.m_value.vec->push_back(CAnyValue());
 			(*thisobj.m_value.vec)[thisobj.m_value.vec->size()-1].decode(dwDecodePos, pData, dwDataSize);
         }
     }
@@ -1408,8 +1401,6 @@ private:
             dwDecodePos += ucNameLen;
             if ( dwDataSize > dwDecodePos )
             {
-				CAnyValue value;
-				thisobj.m_value.map->insert(MapType::value_type(sName, value));
 				(*thisobj.m_value.map)[sName].decode(dwDecodePos, pData, dwDataSize);
             }
         }
@@ -1626,15 +1617,13 @@ private:
             else if(szBuf[dwPos] == '{')
             {
                 dwPos++;
-                CAnyValue objValue;
-                oValue.push_back(objValue);
+                oValue.push_back(CAnyValue());
 				readObj(dwPos,oValue[oValue.size()-1],szBuf,iSize);
             }
             else if (szBuf[dwPos] == '[')
             {
                 dwPos++;
-                CAnyValue arrayValue;
-				oValue.push_back(arrayValue);
+				oValue.push_back(CAnyValue());
                 readArray(dwPos,oValue[oValue.size()-1],szBuf,iSize);
   
             }

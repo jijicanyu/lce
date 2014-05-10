@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include "../CAnyValue.h"
+#include "../include/CAnyValue.h"
 #include "stdio.h"
 #include <stdlib.h>
 #include <sys/time.h>
@@ -12,6 +12,8 @@ int main(int argc,char *argv[])
 	timeval tv1;
 	gettimeofday(&tv1, 0);
 	uint64_t t1 = tv1.tv_sec * 1000000 + tv1.tv_usec;
+
+	string sData;
 
 	for(int i=0;i<15000;i++)
 	{
@@ -38,6 +40,8 @@ int main(int argc,char *argv[])
 		oValue2["data2"] = oValue1;
 		string sBuf;
 		oValue2.encode(sBuf);
+		if(i ==14999) 
+			sData = sBuf;
 	}
 
 	timeval tv2;
@@ -47,8 +51,21 @@ int main(int argc,char *argv[])
 	cout<<"span="<<t2-t1<<endl;
 
 
+	for(int i=0;i<15000;i++)
+	{
+		CAnyValue oValue;
+		oValue.decode(sData.data(),sData.size());
+	}
+
+
+	timeval tv3;
+	gettimeofday(&tv3, 0);
+	uint64_t t3= tv3.tv_sec * 1000000 + tv3.tv_usec;
+
+	cout<<"span="<<t3-t2<<endl;
+
 	CAnyValue oValue;
 	oValue.push_back(123400000000000000);
 	oValue.push_back(-1234);
-    return 0;
+	return 0;
 }

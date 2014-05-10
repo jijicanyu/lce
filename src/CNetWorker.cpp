@@ -267,7 +267,7 @@ int CNetWorker::watch(int iFd,void *pData)
 	}
 
 	uint64_t ddwNum = 1;
-	int size = ::write(m_iEventFd, &ddwNum, sizeof(uint64_t));
+	::write(m_iEventFd, &ddwNum, sizeof(uint64_t));
 
 	return 0;
 }
@@ -276,7 +276,7 @@ int CNetWorker::watch(int iFd,void *pData)
 void CNetWorker::onEvent(int iFd,void *pData)
 {
 	uint64_t ddwNum = 0;
-	int size = ::read(m_iEventFd, &ddwNum, sizeof(uint64_t));
+	::read(m_iEventFd, &ddwNum, sizeof(uint64_t));
 	
 	while(!m_queConn.empty())
 	{
