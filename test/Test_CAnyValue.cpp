@@ -74,7 +74,7 @@ int main(int argc,char *argv[])
 	gettimeofday(&tv1, 0);
 	t1 = tv1.tv_sec * 1000000 + tv1.tv_usec;
 
-
+	
 	oValue7.decode(sBuf5.data(),sBuf5.size());
 
 	gettimeofday(&tv2, 0);
