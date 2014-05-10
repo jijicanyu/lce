@@ -5,7 +5,8 @@ namespace lce
 
 CThread::CThread()
 {
-
+    m_iId = 0;
+    m_iPid = 0;
     m_iStop = 0 ;
 }
 

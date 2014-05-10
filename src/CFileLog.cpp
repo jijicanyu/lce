@@ -1,6 +1,5 @@
 #include "CFileLog.h"
 
-
 namespace lce
 {
 
@@ -21,7 +20,6 @@ bool CFileLog::init(const std::string &sLogFilePath, const unsigned long dwLogFi
 	m_dwLogFileMaxSize = dwLogFileMaxSize;
 	m_uiLogFileNum = uiLogFileNum;
 	m_bShowCmd = bShowCmd;
-
 	return true;
 }
 

@@ -222,14 +222,14 @@ int main()
     }
 
 
-    iSrv1=CCommMgr::getInstance().createSrv(CCommMgr::SRV_TCP,"0.0.0.0",8001);
+    iSrv1=CCommMgr::getInstance().createSrv(SRV_TCP,"0.0.0.0",8001);
 	
     if(iSrv1 < 0 )
     {
         cout<<CCommMgr::getInstance().getErrMsg()<<endl;
     }
 
-	CCommMgr::getInstance().setProcessor(iSrv1,&CProCenter::getInstance(),CCommMgr::PKG_HTTP);
+	CCommMgr::getInstance().setProcessor(iSrv1,&CProCenter::getInstance(),PKG_HTTP);
 
     CCommMgr::getInstance().addTimer(0,2000,&CProCenter::getInstance(),NULL);
     CCommMgr::getInstance().addTimer(1,5000,&CProCenter::getInstance(),NULL);
