@@ -1,6 +1,5 @@
 #include "CFileLog.h"
 
-
 namespace lce
 {
 
