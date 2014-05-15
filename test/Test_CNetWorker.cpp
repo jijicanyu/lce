@@ -2,6 +2,7 @@
 #include <CNetWorkerMgr.h>
 #include <CSingleton.h>
 #include <CTask.h>
+
 using namespace lce;
  
 
@@ -77,8 +78,8 @@ public:
 
 	void onTimer(int iTimeId,void *pData)
 	{
-
-		cout<<"id="<<getId()<<",req="<<m_dwCount<<endl  ;
+				
+		cout<<"thread pid="<< getPid()<<endl;
 		addTimer(0,1000,NULL);
 
 		//connect(m_iConnHandler,"61.135.169.105",80);

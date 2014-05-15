@@ -6,6 +6,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+
 namespace lce
 {
 class CThread
@@ -17,7 +20,13 @@ public:
     int stop();
 
     pthread_t getId(){ return m_iId; }
-
+    pid_t getPid(){ 
+		if(m_iPid == 0)
+		{
+			m_iPid = syscall(SYS_gettid);
+		}
+		return m_iPid;
+	}
     bool isStoped(){ return (m_iStop == 1);}
     char * getErrMsg(){ return m_szErrMsg; }
 
@@ -27,12 +36,14 @@ private:
     {
         CThread * pCThread =(CThread*)pParam;
         pCThread->run();
-        return 0;
+	
+	return 0;
     }
 protected:
     char m_szErrMsg[1024];
 private:
-
+	
+    pid_t m_iPid;
     pthread_t m_iId;
     int m_iStop;
 
