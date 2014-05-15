@@ -241,6 +241,9 @@
 				RelativePath=".\include\CThread.h">
 			</File>
 			<File
+				RelativePath=".\include\Define.h">
+			</File>
+			<File
 				RelativePath=".\include\lce.h">
 			</File>
 			<File
