@@ -15,7 +15,7 @@
 #include <unistd.h>
 #include "Utils.h"
 #include "CThread.h"
-
+#include "CLogBuffer.h"
 namespace lce
 {
 
@@ -67,15 +67,16 @@ private:
 
 	bool shiftFiles();
 	bool writeFile(const std::string& str, const bool bEnd=true);
+	bool writeFile(const char* data,size_t size,const bool bEnd=true);
 
 	bool writeBuffer(const std::string& str, const bool bEnd=true);
 
 private:
 	char m_szErrMsg[1024];
 
-	std::string *m_poWriteBuffer1;
-	std::string *m_poWriteBuffer2;
-	std::string *m_poCurWirteBuffer;
+	CLogBuffer *m_poWriteBuffer1;
+	CLogBuffer *m_poWriteBuffer2;
+	CLogBuffer *m_poCurWirteBuffer;
 	int m_iCurWriteBufferFlag;
 
 	std::string m_sCurDate;

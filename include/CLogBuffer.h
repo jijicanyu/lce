@@ -4,6 +4,11 @@
     > Mail: starjiang@qq.com 
     > Created Time: Tue May 20 14:49:17 2014
  ************************************************************************/
+#ifndef __LCE_LOG_BUFFER_H__
+#define __LCE_LOG_BUFFER_H__
+
+namespace lce
+{
 
 class CLogBuffer
 {
@@ -45,7 +50,7 @@ public:
 		return m_bFull;
 	}
 
-	bool write(char *data,size_t dwLen)
+	bool write(const char *data,size_t dwLen)
 	{
 		if(m_pData == NULL)
 		{
@@ -79,6 +84,7 @@ public:
 	{
 		m_bFull = false;
 		m_dwSize = 0;
+		return true;
 	}
 
 	char * getErrMsg()
@@ -94,3 +100,6 @@ private:
 	char m_szErrMsg[1024];
 
 };
+
+}
+#endif

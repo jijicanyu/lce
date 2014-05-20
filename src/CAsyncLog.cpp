@@ -24,8 +24,12 @@ bool CAsyncLog::init(const std::string &sLogFilePath,int iLogSecs, const unsigne
 	m_uiLogFileNum = uiLogFileNum;
 	m_bShowCmd = bShowCmd;
 
-	m_poWriteBuffer1 = new std::string;
-	m_poWriteBuffer2 = new std::string;
+	m_poWriteBuffer1 = new CLogBuffer;
+	m_poWriteBuffer2 = new CLogBuffer;
+
+	m_poWriteBuffer1->init();
+	m_poWriteBuffer2->init();
+
 	m_poCurWirteBuffer = m_poWriteBuffer1;
 	m_iLogSecs = iLogSecs;
 	m_iCurWriteBufferFlag = 1;
@@ -124,6 +128,39 @@ bool CAsyncLog::writeFile(const std::string &str, const bool bEnd)
 	return true;
 }
 
+bool CAsyncLog::writeFile(const char* data,size_t size, const bool bEnd)
+{
+
+	if (!shiftFiles())
+	{
+		return false;
+	}
+	
+
+	if (!m_ofsOutFile.is_open())
+	{
+		m_ofsOutFile.open(m_sLogFilePath.c_str(),std::ios::out|std::ios::app);
+	}
+
+	if(m_ofsOutFile.fail())
+	{
+		snprintf(m_szErrMsg,sizeof(m_szErrMsg),"open file<%s> err!", m_sLogFilePath.c_str());
+		return false;
+	}
+
+	m_ofsOutFile.write(data,size);
+	
+	if (bEnd)
+	{
+		m_ofsOutFile << std::endl;
+	}
+
+	//m_ofsOutFile.flush();
+
+	return true;
+}
+
+
 
 int CAsyncLog::run()
 {
@@ -132,40 +169,11 @@ int CAsyncLog::run()
 	{
 		usleep(100000);
 		
-		if((iMillSecs >= m_iLogSecs*1000 && m_poCurWirteBuffer->size()>0) ||m_poCurWirteBuffer->size() > 1024*1024*2)
+		if((iMillSecs >= m_iLogSecs*1000 && m_poCurWirteBuffer->size()>0))
 		{
 
-			if(m_iCurWriteBufferFlag == 1)
-			{
-				if(m_poWriteBuffer2 == NULL)
-					m_poWriteBuffer2 = new std::string;
+			flush();
 
-				m_mutex.lock();
-				m_poCurWirteBuffer = m_poWriteBuffer2;
-				m_mutex.unlock();
-
-				writeFile(*m_poWriteBuffer1,false);
-				delete m_poWriteBuffer1;
-				m_poWriteBuffer1 = NULL;
-
-				m_iCurWriteBufferFlag = 2;
-			}
-			else if(m_iCurWriteBufferFlag == 2)
-			{
-				if(m_poWriteBuffer1 == NULL)
-					m_poWriteBuffer1 = new std::string;
-
-				m_mutex.lock();
-				m_poCurWirteBuffer = m_poWriteBuffer1;
-				m_mutex.unlock();
-				writeFile(*m_poWriteBuffer2,false);
-
-				delete m_poWriteBuffer2;
-				m_poWriteBuffer2 = NULL;
-
-				m_iCurWriteBufferFlag = 1;
-			}
-			
 			iMillSecs = 0;
 		}
 		iMillSecs += 100;
@@ -174,24 +182,53 @@ int CAsyncLog::run()
 	return 0;
 }
 
+bool CAsyncLog::flush()
+{
+	if(m_iCurWriteBufferFlag == 1)
+	{
+		m_mutex.lock();
+		m_poCurWirteBuffer = m_poWriteBuffer2;
+		m_mutex.unlock();
 
+		writeFile(m_poWriteBuffer1->data(),m_poWriteBuffer1->size(),false);
+		m_poWriteBuffer1->reset();
+		m_iCurWriteBufferFlag = 2;
+	}
+	else if(m_iCurWriteBufferFlag == 2)
+	{
+		m_mutex.lock();
+		m_poCurWirteBuffer = m_poWriteBuffer1;
+		m_mutex.unlock();
+		writeFile(m_poWriteBuffer2->data(),m_poWriteBuffer2->size(),false);
+
+		m_poWriteBuffer2->reset();
+		m_iCurWriteBufferFlag = 1;
+	}
+
+}
 
 bool CAsyncLog::writeBuffer(const std::string &str, const bool bEnd)
 {
-
-	lce::CAutoLock autoLock(m_mutex);
-
 	if (m_bShowCmd)
 	{
 		std::cout << str << std::endl;
 	}
 
-	m_poCurWirteBuffer->append(str);
+	m_mutex.lock();
+	bool bFlag = m_poCurWirteBuffer->write(str.data(),str.size());
+	m_mutex.unlock();
+
+	if(!bFlag)
+	{
+		flush();
+		m_poCurWirteBuffer->write(str.data(),str.size());
+	}
 
 	if (bEnd)
 	{
-		m_poCurWirteBuffer->append("\n");
+		m_poCurWirteBuffer->write("\n",1);
 	}
+
 
 	return true;
 }
