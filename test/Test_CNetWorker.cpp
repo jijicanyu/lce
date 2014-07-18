@@ -52,7 +52,7 @@ public:
 			sData+="Connection: Close\r\n";
 			sData+="Content-Length: 5\r\n\r\n";  
 			sData+="hello";
-			dispatch(0,NULL);
+			//dispatch(0,NULL);
 			write(stSession,(char*)sData.data(),sData.size());
 		}
 

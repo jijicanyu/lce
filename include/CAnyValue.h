@@ -1108,9 +1108,8 @@ private:
         }
     }
 
-    static std::string textEncodeJSON(const char *sSrc,size_t iSize)
+	static void textEncodeJSON(std::string &sDesc,const char *sSrc,size_t iSize)
     {
-        std::string sDesc;
         for (size_t i=0; i<iSize; i++)
         {
             if (sSrc[i] == '\"')
@@ -1160,7 +1159,6 @@ private:
 
             }
         }
-        return sDesc;
     }
 
     static inline bool isControlCharacter(char ch)
@@ -1206,7 +1204,7 @@ public:
         case DType::String:
         {
             sBuf += "\"";
-            sBuf += textEncodeJSON(m_value.buf->data(), m_value.buf->size());
+            textEncodeJSON(sBuf,m_value.buf->data(), m_value.buf->size());
             sBuf += "\"";
         }
         break;
@@ -1245,7 +1243,7 @@ public:
                 {
                     sBuf += ",\"";
                 }
-                sBuf += textEncodeJSON(it->first.data(), it->first.size());
+                textEncodeJSON(sBuf,it->first.data(), it->first.size());
                 sBuf += "\":";
                 it->second.encodeJSON(sBuf);
             }
@@ -2331,7 +2329,7 @@ public:
 
     void setBodyData(const unsigned char* pData, const size_t dwSize)
     {
-        this->setbodydata((char*)pData, dwSize);
+        this->setBodyData((char*)pData, dwSize);
     }
     void setBodyData(const char* pData, const size_t dwSize)
     {
