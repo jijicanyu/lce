@@ -29,6 +29,7 @@ public:
 	bool write(const std::string& sMsg);
 	bool writeRaw(const std::string& sMsg);
 	bool write(const char *sFormat, ...);
+	void flush();
 	const char* getErrMsg() const {	return m_szErrMsg;	}
 private:
 
@@ -64,7 +65,6 @@ private:
 		snprintf(szDate, sizeof(szDate), "%04d-%02d-%02d", curr.tm_year+1900, curr.tm_mon+1, curr.tm_mday);
 		return std::string(szDate);
 	}
-	void flush();
 	bool shiftFiles();
 	bool writeFile(const std::string& str, const bool bEnd=true);
 	bool writeFile(const char* data,size_t size,const bool bEnd=true);

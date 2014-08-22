@@ -60,7 +60,7 @@ public:
 
 		if(m_dwSize+dwLen > m_dwMaxSize)
 		{
-			snprintf(m_szErrMsg,sizeof(m_szErrMsg),"buffer is full now=%ul,data=%ul",m_dwSize,dwLen);
+			snprintf(m_szErrMsg,sizeof(m_szErrMsg),"buffer is full now=%u,data=%u",(unsigned int)m_dwSize,(unsigned int)dwLen);
 			m_bFull = true;
 			return false;
 		}
